@@ -1,0 +1,21 @@
+<svg id="cleaning-app_2_" data-name="cleaning-app (2)" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="525" height="982" viewBox="0 0 525 982">
+  <defs>
+    <linearGradient id="linear-gradient" x2="0" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0" stop-color="#e8f5ff"/>
+      <stop offset="0.5" stop-color="#fff9f0"/>
+      <stop offset="1" stop-color="#fefefe"/>
+    </linearGradient>
+  </defs>
+  <g id="Composant_4_1" data-name="Composant 4 – 1" transform="translate(45 50)">
+    <path id="Tracé_13" data-name="Tracé 13" d="M0,0H430V932H0Z" fill="url(#linear-gradient)"/>
+  </g>
+  <g id="Composant_3_1" data-name="Composant 3 – 1" transform="translate(325)">
+    <circle id="Ellipse_5" data-name="Ellipse 5" cx="100" cy="100" r="100" fill="#ffe5d9" opacity="0.6"/>
+  </g>
+  <g id="Composant_2_1" data-name="Composant 2 – 1" transform="translate(0 325)">
+    <circle id="Ellipse_6" data-name="Ellipse 6" cx="75" cy="75" r="75" fill="#c5f2d8" opacity="0.6"/>
+  </g>
+  <g id="Composant_1_1" data-name="Composant 1 – 1" transform="translate(345 610)">
+    <circle id="Ellipse_7" data-name="Ellipse 7" cx="90" cy="90" r="90" fill="#ffe5d9" opacity="0.6"/>
+  </g>
+</svg>
