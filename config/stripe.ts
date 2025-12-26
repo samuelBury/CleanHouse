@@ -1,0 +1,2 @@
+// Configuration Stripe
+export const STRIPE_PUBLISHABLE_KEY = 'pk_test_51ShsNC90Od9MQpmiEh5qhipQNjaBktdVx6eieMsc9OpgMdeYbWinmcpG8s0JUBGLilqS59CAG1FT3gCwQ7SMqsXp00HeUwDdeJ';

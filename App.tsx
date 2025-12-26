@@ -1,6 +1,8 @@
 import React, {useState} from 'react';
 import {ScrollView, StatusBar, StyleSheet, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+// import {StripeProvider} from '@stripe/stripe-react-native';
+// import {STRIPE_PUBLISHABLE_KEY} from './config/stripe';
 import BackgroundSVG from './components/BackgroundSVG';
 import Header from './components/Header';
 import HeroCard from './components/HeroCard';
@@ -10,11 +12,13 @@ import BottomNav from './components/BottomNav';
 import BookingModal from './components/BookingModal';
 import PaymentModal from './components/PaymentModal';
 import ConfirmationModal from './components/ConfirmationModal';
+import SearchingProfessional from './components/SearchingProfessional';
 
 export default function App(): React.JSX.Element {
   const [bookingModalVisible, setBookingModalVisible] = useState(false);
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
   const [confirmationModalVisible, setConfirmationModalVisible] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
   // Booking data
   const [bookingData, setBookingData] = useState({
@@ -23,6 +27,7 @@ export default function App(): React.JSX.Element {
     date: new Date().toLocaleDateString('fr-FR'),
     time: '15:46',
     payment: '',
+    isIndeterminate: true,
   });
 
   const handleServicePress = (service: string) => {
@@ -39,10 +44,12 @@ export default function App(): React.JSX.Element {
     setBookingData({...bookingData, payment: paymentMethod});
     setPaymentModalVisible(false);
     setConfirmationModalVisible(true);
+    setIsSearching(true);
   };
 
   const handleConfirmationClose = () => {
     setConfirmationModalVisible(false);
+    setIsSearching(false);
   };
 
   return (
@@ -54,6 +61,7 @@ export default function App(): React.JSX.Element {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <Header />
         <HeroCard />
+        {isSearching && <SearchingProfessional />}
         <ServicesSection onServicePress={handleServicePress} />
         <BookingSection />
       </ScrollView>
@@ -69,6 +77,11 @@ export default function App(): React.JSX.Element {
         visible={paymentModalVisible}
         onClose={() => setPaymentModalVisible(false)}
         onConfirm={handlePaymentConfirm}
+        service={bookingData.service}
+        date={bookingData.date}
+        time={bookingData.time}
+        duration={bookingData.duration}
+        isIndeterminate={bookingData.isIndeterminate}
       />
       <ConfirmationModal
         visible={confirmationModalVisible}

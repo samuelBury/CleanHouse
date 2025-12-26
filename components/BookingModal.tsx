@@ -7,6 +7,7 @@ import {
   TextInput,
   StyleSheet,
   Platform,
+  Switch,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
@@ -24,6 +25,7 @@ export default function BookingModal({visible, onClose, onConfirm, service}: Boo
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [duration, setDuration] = useState<number | null>(null);
   const [showDurationPicker, setShowDurationPicker] = useState(false);
+  const [isIndeterminate, setIsIndeterminate] = useState(true);
 
   const onDateChange = (event: any, selectedDate?: Date) => {
     if (Platform.OS === 'android') {
@@ -83,7 +85,12 @@ export default function BookingModal({visible, onClose, onConfirm, service}: Boo
                 {service === 'Ménage' ? '🏠' : service === 'Repassage' ? '👔' : '✨'}
               </Text>
             </View>
-            <Text style={styles.modalHeaderTitle}>{service}</Text>
+            <View style={styles.modalHeaderTitleContainer}>
+              <Text style={styles.modalHeaderTitle}>{service}</Text>
+              <Text style={styles.modalHeaderPrice}>
+                {service === 'Ménage' ? '15€/h' : service === 'Repassage' ? '10€/h' : '20€/h'}
+              </Text>
+            </View>
             <TouchableOpacity style={styles.modalCloseButton} onPress={onClose}>
               <Text style={styles.modalCloseText}>✕</Text>
             </TouchableOpacity>
@@ -155,17 +162,48 @@ export default function BookingModal({visible, onClose, onConfirm, service}: Boo
                 <Text style={styles.formLabelIcon}>⏱️</Text>
                 <Text style={styles.formLabel}>Nombre d'heures</Text>
               </View>
+
+              {/* Toggle durée indéterminée */}
+              <View style={styles.toggleContainer}>
+                <Text style={styles.toggleLabel}>Durée indéterminée</Text>
+                <Switch
+                  value={isIndeterminate}
+                  onValueChange={(value) => {
+                    setIsIndeterminate(value);
+                    if (value) {
+                      setDuration(null);
+                      setShowDurationPicker(false);
+                    }
+                  }}
+                  trackColor={{false: '#E0E0E0', true: '#5FB17C'}}
+                  thumbColor={isIndeterminate ? '#fff' : '#fff'}
+                />
+              </View>
+
               <TouchableOpacity
-                style={styles.formInput}
-                onPress={() => setShowDurationPicker(!showDurationPicker)}
+                style={[
+                  styles.formInput,
+                  isIndeterminate && styles.formInputDisabled,
+                ]}
+                onPress={() => {
+                  if (!isIndeterminate) {
+                    setShowDurationPicker(!showDurationPicker);
+                  }
+                }}
+                disabled={isIndeterminate}
               >
-                <Text style={duration ? styles.timeText : styles.placeholderText}>
-                  {duration
-                    ? `${duration} heure${duration > 1 ? 's' : ''}`
-                    : 'Sélectionnez la durée'}
+                <Text style={[
+                  duration ? styles.timeText : styles.placeholderText,
+                  isIndeterminate && styles.disabledText,
+                ]}>
+                  {isIndeterminate
+                    ? 'Calculée à la fin de la prestation'
+                    : duration
+                      ? `${duration} heure${duration > 1 ? 's' : ''}`
+                      : 'Sélectionnez la durée'}
                 </Text>
               </TouchableOpacity>
-              {showDurationPicker && (
+              {showDurationPicker && !isIndeterminate && (
                 <View style={styles.durationPicker}>
                   {[1, 2, 3, 4, 5, 6, 7, 8].map((hours) => (
                     <TouchableOpacity
@@ -243,11 +281,19 @@ const styles = StyleSheet.create({
   modalIconText: {
     fontSize: 20,
   },
+  modalHeaderTitleContainer: {
+    flex: 1,
+  },
   modalHeaderTitle: {
     fontSize: 20,
     fontWeight: '600',
     color: '#fff',
-    flex: 1,
+  },
+  modalHeaderPrice: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginTop: 2,
   },
   modalCloseButton: {
     width: 32,
@@ -299,6 +345,26 @@ const styles = StyleSheet.create({
   placeholderText: {
     fontSize: 15,
     color: '#999',
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    paddingVertical: 8,
+  },
+  toggleLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+  },
+  formInputDisabled: {
+    backgroundColor: '#E8E8E8',
+    borderColor: '#CCC',
+  },
+  disabledText: {
+    color: '#999',
+    fontStyle: 'italic',
   },
   durationPicker: {
     backgroundColor: '#fff',

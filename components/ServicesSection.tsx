@@ -16,8 +16,11 @@ export default function ServicesSection({onServicePress}: ServicesSectionProps) 
             style={styles.serviceImage}
           />
           <View style={styles.menageOverlay}>
-            <Text style={styles.serviceIcon}>🏠</Text>
-            <Text style={styles.serviceTitle}>Ménage</Text>
+            <Text style={styles.servicePrice}>15€/h</Text>
+            <View style={styles.serviceInfo}>
+              <Text style={styles.serviceIcon}>🏠</Text>
+              <Text style={styles.serviceTitle}>Ménage</Text>
+            </View>
           </View>
         </TouchableOpacity>
 
@@ -27,8 +30,11 @@ export default function ServicesSection({onServicePress}: ServicesSectionProps) 
             style={styles.serviceImage}
           />
           <View style={styles.repassageOverlay}>
-            <Text style={styles.serviceIcon}>👔</Text>
-            <Text style={styles.serviceTitle}>Repassage</Text>
+            <Text style={styles.servicePrice}>10€/h</Text>
+            <View style={styles.serviceInfo}>
+              <Text style={styles.serviceIcon}>👔</Text>
+              <Text style={styles.serviceTitle}>Repassage</Text>
+            </View>
           </View>
         </TouchableOpacity>
       </View>
@@ -39,8 +45,11 @@ export default function ServicesSection({onServicePress}: ServicesSectionProps) 
           style={styles.fullServiceImage}
         />
         <View style={styles.fullServiceOverlay}>
-          <Text style={styles.fullServiceIcon}>✨</Text>
-          <Text style={styles.fullServiceTitle}>Ménage & Repassage</Text>
+          <Text style={styles.fullServicePrice}>20€/h</Text>
+          <View style={styles.fullServiceInfo}>
+            <Text style={styles.fullServiceIcon}>✨</Text>
+            <Text style={styles.fullServiceTitle}>Ménage & Repassage</Text>
+          </View>
         </View>
       </TouchableOpacity>
     </View>
@@ -94,9 +103,21 @@ const styles = StyleSheet.create({
     padding: 12,
     justifyContent: 'flex-end',
   },
+  servicePrice: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  serviceInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   serviceIcon: {
     fontSize: 24,
-    marginBottom: 4,
+    marginRight: 6,
   },
   serviceTitle: {
     color: '#fff',
@@ -124,6 +145,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
+  },
+  fullServicePrice: {
+    position: 'absolute',
+    top: 8,
+    right: 12,
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  fullServiceInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   fullServiceIcon: {
     fontSize: 20,
