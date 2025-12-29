@@ -7,7 +7,6 @@ import {
   TextInput,
   StyleSheet,
   Platform,
-  Switch,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
@@ -25,7 +24,6 @@ export default function BookingModal({visible, onClose, onConfirm, service}: Boo
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [duration, setDuration] = useState<number | null>(null);
   const [showDurationPicker, setShowDurationPicker] = useState(false);
-  const [isIndeterminate, setIsIndeterminate] = useState(true);
 
   const onDateChange = (event: any, selectedDate?: Date) => {
     if (Platform.OS === 'android') {
@@ -163,47 +161,17 @@ export default function BookingModal({visible, onClose, onConfirm, service}: Boo
                 <Text style={styles.formLabel}>Nombre d'heures</Text>
               </View>
 
-              {/* Toggle durée indéterminée */}
-              <View style={styles.toggleContainer}>
-                <Text style={styles.toggleLabel}>Durée indéterminée</Text>
-                <Switch
-                  value={isIndeterminate}
-                  onValueChange={(value) => {
-                    setIsIndeterminate(value);
-                    if (value) {
-                      setDuration(null);
-                      setShowDurationPicker(false);
-                    }
-                  }}
-                  trackColor={{false: '#E0E0E0', true: '#5FB17C'}}
-                  thumbColor={isIndeterminate ? '#fff' : '#fff'}
-                />
-              </View>
-
               <TouchableOpacity
-                style={[
-                  styles.formInput,
-                  isIndeterminate && styles.formInputDisabled,
-                ]}
-                onPress={() => {
-                  if (!isIndeterminate) {
-                    setShowDurationPicker(!showDurationPicker);
-                  }
-                }}
-                disabled={isIndeterminate}
+                style={styles.formInput}
+                onPress={() => setShowDurationPicker(!showDurationPicker)}
               >
-                <Text style={[
-                  duration ? styles.timeText : styles.placeholderText,
-                  isIndeterminate && styles.disabledText,
-                ]}>
-                  {isIndeterminate
-                    ? 'Calculée à la fin de la prestation'
-                    : duration
-                      ? `${duration} heure${duration > 1 ? 's' : ''}`
-                      : 'Sélectionnez la durée'}
+                <Text style={duration ? styles.timeText : styles.placeholderText}>
+                  {duration
+                    ? `${duration} heure${duration > 1 ? 's' : ''}`
+                    : 'Sélectionnez la durée'}
                 </Text>
               </TouchableOpacity>
-              {showDurationPicker && !isIndeterminate && (
+              {showDurationPicker && (
                 <View style={styles.durationPicker}>
                   {[1, 2, 3, 4, 5, 6, 7, 8].map((hours) => (
                     <TouchableOpacity
@@ -261,7 +229,7 @@ const styles = StyleSheet.create({
     maxHeight: '80%',
   },
   modalHeader: {
-    backgroundColor: '#5FB17C',
+    backgroundColor: '#d4a59a',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
@@ -322,7 +290,7 @@ const styles = StyleSheet.create({
   formLabelIcon: {
     fontSize: 16,
     marginRight: 6,
-    color: '#5FB17C',
+    color: '#d4a59a',
   },
   formLabel: {
     fontSize: 14,
@@ -336,7 +304,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#333',
     borderWidth: 1,
-    borderColor: '#5FB17C',
+    borderColor: '#d4a59a',
   },
   timeText: {
     fontSize: 15,
@@ -345,26 +313,6 @@ const styles = StyleSheet.create({
   placeholderText: {
     fontSize: 15,
     color: '#999',
-  },
-  toggleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-    paddingVertical: 8,
-  },
-  toggleLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
-  },
-  formInputDisabled: {
-    backgroundColor: '#E8E8E8',
-    borderColor: '#CCC',
-  },
-  disabledText: {
-    color: '#999',
-    fontStyle: 'italic',
   },
   durationPicker: {
     backgroundColor: '#fff',
@@ -375,7 +323,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
     borderWidth: 1,
-    borderColor: '#5FB17C',
+    borderColor: '#d4a59a',
   },
   durationOption: {
     backgroundColor: '#F5F5F5',
@@ -388,8 +336,8 @@ const styles = StyleSheet.create({
     borderColor: '#E0E0E0',
   },
   durationOptionSelected: {
-    backgroundColor: '#5FB17C',
-    borderColor: '#5FB17C',
+    backgroundColor: '#d4a59a',
+    borderColor: '#d4a59a',
   },
   durationOptionText: {
     fontSize: 14,
@@ -401,7 +349,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   modalConfirmButton: {
-    backgroundColor: '#5FB17C',
+    backgroundColor: '#d4a59a',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',

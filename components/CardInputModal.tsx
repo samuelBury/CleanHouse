@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
     maxHeight: '90%',
   },
   modalHeader: {
-    backgroundColor: '#5FB17C',
+    backgroundColor: '#d4a59a',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
   },
   infoBox: {
     flexDirection: 'row',
-    backgroundColor: '#E3F2FD',
+    backgroundColor: '#ffe5d9',
     padding: 12,
     borderRadius: 12,
     marginBottom: 20,
@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 13,
-    color: '#1565C0',
+    color: '#8b5a4a',
     lineHeight: 18,
   },
   formGroup: {
@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   confirmButton: {
-    backgroundColor: '#5FB17C',
+    backgroundColor: '#d4a59a',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',

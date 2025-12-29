@@ -1,17 +1,24 @@
 import React from 'react';
 import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
 
-export default function BottomNav() {
+interface BottomNavProps {
+  activeTab?: 'home' | 'search' | 'agenda' | 'profile' | 'wallet' | 'history';
+  onHomePress?: () => void;
+  onAgendaPress?: () => void;
+  onProfilePress?: () => void;
+}
+
+export default function BottomNav({activeTab = 'home', onHomePress, onAgendaPress, onProfilePress}: BottomNavProps) {
   return (
     <View style={styles.bottomNav}>
-      <TouchableOpacity style={styles.navItem}>
-        <Text style={styles.navIconActive}>🏠</Text>
-        <Text style={styles.navTextActive}>Accueil</Text>
+      <TouchableOpacity style={styles.navItem} onPress={onHomePress}>
+        <Text style={activeTab === 'home' ? styles.navIconActive : styles.navIcon}>🏠</Text>
+        <Text style={activeTab === 'home' ? styles.navTextActive : styles.navText}>Accueil</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.navItem}>
-        <Text style={styles.navIcon}>🔍</Text>
-        <Text style={styles.navText}>Recherche</Text>
+        <Text style={activeTab === 'search' ? styles.navIconActive : styles.navIcon}>🔍</Text>
+        <Text style={activeTab === 'search' ? styles.navTextActive : styles.navText}>Recherche</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.navItemCenter}>
@@ -20,14 +27,14 @@ export default function BottomNav() {
         </View>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.navItem}>
-        <Text style={styles.navIcon}>📅</Text>
-        <Text style={styles.navText}>Agenda</Text>
+      <TouchableOpacity style={styles.navItem} onPress={onAgendaPress}>
+        <Text style={activeTab === 'agenda' ? styles.navIconActive : styles.navIcon}>📅</Text>
+        <Text style={activeTab === 'agenda' ? styles.navTextActive : styles.navText}>Agenda</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.navItem}>
-        <Text style={styles.navIcon}>👤</Text>
-        <Text style={styles.navText}>Profil</Text>
+      <TouchableOpacity style={styles.navItem} onPress={onProfilePress}>
+        <Text style={activeTab === 'profile' ? styles.navIconActive : styles.navIcon}>👤</Text>
+        <Text style={activeTab === 'profile' ? styles.navTextActive : styles.navText}>Profil</Text>
       </TouchableOpacity>
     </View>
   );
@@ -70,7 +77,7 @@ const styles = StyleSheet.create({
   navIconActive: {
     fontSize: 20,
     marginBottom: 4,
-    color: '#4CAF50',
+    color: '#d4a59a',
   },
   navText: {
     fontSize: 10,
@@ -78,14 +85,14 @@ const styles = StyleSheet.create({
   },
   navTextActive: {
     fontSize: 10,
-    color: '#4CAF50',
+    color: '#d4a59a',
     fontWeight: '600',
   },
   centerButton: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#d4a59a',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',

@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     maxHeight: '80%',
   },
   modalHeader: {
-    backgroundColor: '#5FB17C',
+    backgroundColor: '#d4a59a',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
   summaryPrice: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#5FB17C',
+    color: '#d4a59a',
   },
   sectionTitle: {
     fontSize: 16,
@@ -263,8 +263,8 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   paymentOptionSelected: {
-    borderColor: '#5FB17C',
-    backgroundColor: '#F0FAF4',
+    borderColor: '#d4a59a',
+    backgroundColor: '#ffe5d9',
   },
   paymentIconContainer: {
     width: 40,
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#5FB17C',
+    borderColor: '#d4a59a',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -297,10 +297,10 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#5FB17C',
+    backgroundColor: '#d4a59a',
   },
   confirmButton: {
-    backgroundColor: '#5FB17C',
+    backgroundColor: '#d4a59a',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',

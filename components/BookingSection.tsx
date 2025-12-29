@@ -1,5 +1,5 @@
 import React from 'react';
-import {View, Text, Image, TouchableOpacity, StyleSheet} from 'react-native';
+import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
 
 export default function BookingSection() {
   return (
@@ -17,20 +17,6 @@ export default function BookingSection() {
 
       {/* Employee Section */}
       <View style={styles.employeeSection}>
-        <View style={styles.employeeCard}>
-          <Image
-            source={{uri: 'https://i.pravatar.cc/100?img=5'}}
-            style={styles.employeeAvatar}
-          />
-          <View style={styles.employeeInfo}>
-            <Text style={styles.employeeName}>Aisha</Text>
-            <Text style={styles.employeeRating}>⭐ 4.9/5 (120)</Text>
-          </View>
-          <TouchableOpacity style={styles.employeeMoreButton}>
-            <Text style={styles.employeeMoreIcon}>⋮</Text>
-          </TouchableOpacity>
-        </View>
-
         <View style={styles.firstBookingCard}>
           <Text style={styles.firstBookingIcon}>📱</Text>
           <View style={styles.firstBookingContent}>
@@ -76,7 +62,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   confirmButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#d4a59a',
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderRadius: 20,
@@ -93,45 +79,6 @@ const styles = StyleSheet.create({
   employeeSection: {
     padding: 20,
     paddingTop: 0,
-  },
-  employeeCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  employeeAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 12,
-  },
-  employeeInfo: {
-    flex: 1,
-  },
-  employeeName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
-  },
-  employeeRating: {
-    fontSize: 12,
-    color: '#666',
-  },
-  employeeMoreButton: {
-    padding: 8,
-  },
-  employeeMoreIcon: {
-    fontSize: 20,
-    color: '#999',
   },
   firstBookingCard: {
     flexDirection: 'row',
