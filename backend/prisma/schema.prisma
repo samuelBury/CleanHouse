@@ -1,0 +1,106 @@
+// Prisma schema for CleanHouse
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String          @id @default(uuid())
+  email          String          @unique
+  password       String?         // null si social auth
+  name           String
+  phone          String?
+  avatar         String?
+  googleId       String?         @unique
+  appleId        String?         @unique
+  balance        Float           @default(0)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  bookings       Booking[]
+  transactions   Transaction[]
+  paymentMethods PaymentMethod[]
+  refreshTokens  RefreshToken[]
+}
+
+model Booking {
+  id           String        @id @default(uuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  service      ServiceType
+  date         DateTime
+  time         String        // Format HH:MM
+  duration     Int           // En heures
+  address      String
+  latitude     Float?
+  longitude    Float?
+  price        Float
+  status       BookingStatus @default(confirmed)
+  professional String?       // Nom du professionnel simulé
+  notes        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  transaction  Transaction?
+}
+
+model Transaction {
+  id          String          @id @default(uuid())
+  userId      String
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        TransactionType
+  amount      Float
+  description String
+  bookingId   String?         @unique
+  booking     Booking?        @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  stripeId    String?         // PaymentIntent ID
+  createdAt   DateTime        @default(now())
+}
+
+model PaymentMethod {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stripeId  String   @unique // Stripe PaymentMethod ID
+  type      String   @default("card")
+  last4     String
+  brand     String
+  expMonth  Int
+  expYear   Int
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+enum ServiceType {
+  MENAGE
+  REPASSAGE
+  MENAGE_REPASSAGE
+}
+
+enum BookingStatus {
+  pending
+  confirmed
+  in_progress
+  completed
+  cancelled
+}
+
+enum TransactionType {
+  expense
+  deposit
+  refund
+}
