@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
     maxHeight: '90%',
   },
   modalHeader: {
-    backgroundColor: '#d4a59a',
+    backgroundColor: '#789C8D',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   confirmButton: {
-    backgroundColor: '#d4a59a',
+    backgroundColor: '#789C8D',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',

@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
   navIconActive: {
     fontSize: 20,
     marginBottom: 4,
-    color: '#d4a59a',
+    color: '#789C8D',
   },
   navText: {
     fontSize: 10,
@@ -85,14 +85,14 @@ const styles = StyleSheet.create({
   },
   navTextActive: {
     fontSize: 10,
-    color: '#d4a59a',
+    color: '#789C8D',
     fontWeight: '600',
   },
   centerButton: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#d4a59a',
+    backgroundColor: '#789C8D',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',

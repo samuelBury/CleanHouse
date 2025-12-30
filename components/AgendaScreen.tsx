@@ -116,7 +116,7 @@ export default function AgendaScreen({reservations}: AgendaScreenProps) {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'confirmed':
-        return {text: 'Confirmée', color: '#d4a59a', bg: '#ffe5d9'};
+        return {text: 'Confirmée', color: '#789C8D', bg: '#ffe5d9'};
       case 'completed':
         return {text: 'Terminée', color: '#4CAF50', bg: '#E8F5E9'};
       case 'cancelled':
@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
   },
   header: {
-    backgroundColor: '#d4a59a',
+    backgroundColor: '#789C8D',
     paddingTop: 20,
     paddingBottom: 20,
     paddingHorizontal: 20,
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
   },
   navButtonText: {
     fontSize: 24,
-    color: '#d4a59a',
+    color: '#789C8D',
     fontWeight: '600',
   },
   monthTitle: {
@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   dayCellSelected: {
-    backgroundColor: '#d4a59a',
+    backgroundColor: '#789C8D',
     borderRadius: 20,
   },
   dayCellToday: {
@@ -327,14 +327,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   dayTextToday: {
-    color: '#d4a59a',
+    color: '#789C8D',
     fontWeight: '600',
   },
   reservationDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#d4a59a',
+    backgroundColor: '#789C8D',
     position: 'absolute',
     bottom: 4,
   },
@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
   detailPrice: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#d4a59a',
+    color: '#789C8D',
   },
   bottomPadding: {
     height: 100,

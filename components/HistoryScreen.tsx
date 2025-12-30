@@ -109,7 +109,7 @@ export default function HistoryScreen({reservations}: HistoryScreenProps) {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'confirmed':
-        return {text: 'Confirmée', color: '#d4a59a', bg: '#ffe5d9'};
+        return {text: 'Confirmée', color: '#789C8D', bg: '#ffe5d9'};
       case 'completed':
         return {text: 'Terminée', color: '#4CAF50', bg: '#E8F5E9'};
       case 'cancelled':
@@ -434,7 +434,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
   },
   header: {
-    backgroundColor: '#d4a59a',
+    backgroundColor: '#789C8D',
     paddingTop: 20,
     paddingBottom: 20,
     paddingHorizontal: 20,
@@ -469,7 +469,7 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#d4a59a',
+    color: '#789C8D',
   },
   statLabel: {
     fontSize: 11,
@@ -494,7 +494,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   sortButtonActive: {
-    backgroundColor: '#d4a59a',
+    backgroundColor: '#789C8D',
   },
   sortButtonText: {
     fontSize: 12,
@@ -525,10 +525,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   filterButtonTextActive: {
-    color: '#d4a59a',
+    color: '#789C8D',
   },
   filterBadge: {
-    backgroundColor: '#d4a59a',
+    backgroundColor: '#789C8D',
     borderRadius: 10,
     minWidth: 18,
     height: 18,
@@ -559,17 +559,17 @@ const styles = StyleSheet.create({
   },
   activeFilterText: {
     fontSize: 12,
-    color: '#d4a59a',
+    color: '#789C8D',
     fontWeight: '500',
   },
   activeFilterRemove: {
     fontSize: 12,
-    color: '#d4a59a',
+    color: '#789C8D',
     marginLeft: 6,
   },
   clearFiltersText: {
     fontSize: 12,
-    color: '#d4a59a',
+    color: '#789C8D',
     fontWeight: '600',
   },
   listContainer: {
@@ -662,7 +662,7 @@ const styles = StyleSheet.create({
   },
   emptyButton: {
     marginTop: 16,
-    backgroundColor: '#d4a59a',
+    backgroundColor: '#789C8D',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 20,
@@ -729,7 +729,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
   },
   filterOptionActive: {
-    backgroundColor: '#d4a59a',
+    backgroundColor: '#789C8D',
   },
   filterOptionText: {
     fontSize: 13,
@@ -751,19 +751,19 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#d4a59a',
+    borderColor: '#789C8D',
     alignItems: 'center',
   },
   clearButtonText: {
     fontSize: 14,
-    color: '#d4a59a',
+    color: '#789C8D',
     fontWeight: '600',
   },
   applyButton: {
     flex: 1,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: '#d4a59a',
+    backgroundColor: '#789C8D',
     alignItems: 'center',
   },
   applyButtonText: {

@@ -57,7 +57,7 @@ export default function WalletScreen({
 
   const getTransactionColor = (type: string) => {
     if (type === 'deposit' || type === 'refund') return '#4CAF50';
-    return '#d4a59a';
+    return '#789C8D';
   };
 
   const getPaymentIcon = (type: string) => {
@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
   },
   header: {
-    backgroundColor: '#d4a59a',
+    backgroundColor: '#789C8D',
     paddingTop: 20,
     paddingBottom: 60,
     paddingHorizontal: 20,
@@ -375,13 +375,13 @@ const styles = StyleSheet.create({
   },
   addMoneyIcon: {
     fontSize: 18,
-    color: '#d4a59a',
+    color: '#789C8D',
     fontWeight: '700',
     marginRight: 8,
   },
   addMoneyText: {
     fontSize: 14,
-    color: '#d4a59a',
+    color: '#789C8D',
     fontWeight: '600',
   },
   section: {
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
   },
   addButton: {
     fontSize: 14,
-    color: '#d4a59a',
+    color: '#789C8D',
     fontWeight: '600',
   },
   emptyCard: {
@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   emptyButton: {
-    backgroundColor: '#d4a59a',
+    backgroundColor: '#789C8D',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 20,
@@ -477,7 +477,7 @@ const styles = StyleSheet.create({
   },
   defaultText: {
     fontSize: 12,
-    color: '#d4a59a',
+    color: '#789C8D',
     fontWeight: '600',
   },
   transactionCard: {
@@ -628,7 +628,7 @@ const styles = StyleSheet.create({
   quickAmountText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#d4a59a',
+    color: '#789C8D',
   },
   textInput: {
     backgroundColor: '#F5F5F5',
@@ -639,7 +639,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   confirmButton: {
-    backgroundColor: '#d4a59a',
+    backgroundColor: '#789C8D',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',

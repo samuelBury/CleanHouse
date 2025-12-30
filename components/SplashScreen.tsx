@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 10,
-    backgroundColor: '#d4a59a',
+    backgroundColor: '#789C8D',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     borderWidth: 3,
     borderColor: 'rgba(255, 255, 255, 0.2)',
-    borderTopColor: '#d4a59a',
+    borderTopColor: '#789C8D',
     marginBottom: 16,
   },
   loadingText: {
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: '100%',
-    backgroundColor: '#d4a59a',
+    backgroundColor: '#789C8D',
     borderRadius: 2,
   },
   badgesContainer: {

@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   header: {
-    backgroundColor: '#d4a59a',
+    backgroundColor: '#789C8D',
     paddingTop: 50,
     paddingBottom: 20,
     paddingHorizontal: 20,
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   profileInitials: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#d4a59a',
+    color: '#789C8D',
   },
   profileName: {
     fontSize: 20,
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   menuLabelActive: {
-    color: '#d4a59a',
+    color: '#789C8D',
     fontWeight: '600',
   },
   menuLabelDanger: {

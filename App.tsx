@@ -14,6 +14,7 @@ import PaymentModal from './components/PaymentModal';
 import ConfirmationModal from './components/ConfirmationModal';
 import SearchingProfessional from './components/SearchingProfessional';
 import SplashScreen from './components/SplashScreen';
+import AuthScreen from './components/AuthScreen';
 import ProfileDrawer from './components/ProfileDrawer';
 import AgendaScreen, {Reservation} from './components/AgendaScreen';
 import WalletScreen, {Transaction, PaymentMethod} from './components/WalletScreen';
@@ -82,6 +83,7 @@ const initialPaymentMethods: PaymentMethod[] = [
 
 export default function App(): React.JSX.Element {
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeScreen, setActiveScreen] = useState<'home' | 'agenda' | 'wallet' | 'history'>('home');
   const [profileVisible, setProfileVisible] = useState(false);
   const [bookingModalVisible, setBookingModalVisible] = useState(false);
@@ -173,6 +175,11 @@ export default function App(): React.JSX.Element {
   // Afficher le splash screen pendant le chargement
   if (isLoading) {
     return <SplashScreen onFinish={() => setIsLoading(false)} />;
+  }
+
+  // Afficher l'écran d'authentification si non connecté
+  if (!isAuthenticated) {
+    return <AuthScreen onAuthSuccess={() => setIsAuthenticated(true)} />;
   }
 
   return (

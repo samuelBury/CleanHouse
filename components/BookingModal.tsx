@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
     maxHeight: '80%',
   },
   modalHeader: {
-    backgroundColor: '#d4a59a',
+    backgroundColor: '#789C8D',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
   formLabelIcon: {
     fontSize: 16,
     marginRight: 6,
-    color: '#d4a59a',
+    color: '#789C8D',
   },
   formLabel: {
     fontSize: 14,
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#333',
     borderWidth: 1,
-    borderColor: '#d4a59a',
+    borderColor: '#789C8D',
   },
   timeText: {
     fontSize: 15,
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
     borderWidth: 1,
-    borderColor: '#d4a59a',
+    borderColor: '#789C8D',
   },
   durationOption: {
     backgroundColor: '#F5F5F5',
@@ -336,8 +336,8 @@ const styles = StyleSheet.create({
     borderColor: '#E0E0E0',
   },
   durationOptionSelected: {
-    backgroundColor: '#d4a59a',
-    borderColor: '#d4a59a',
+    backgroundColor: '#789C8D',
+    borderColor: '#789C8D',
   },
   durationOptionText: {
     fontSize: 14,
@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   modalConfirmButton: {
-    backgroundColor: '#d4a59a',
+    backgroundColor: '#789C8D',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
