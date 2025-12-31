@@ -13,15 +13,15 @@ export const authService = {
   // Login with email/password
   async login(credentials: LoginCredentials): Promise<ApiResponse<AuthResponse>> {
     try {
-      const response = await api.post<AuthResponse>('/auth/login', credentials);
-      const { user, token, refreshToken } = response.data;
+      const response = await api.post('/auth/login', credentials);
+      const { user, accessToken, refreshToken } = response.data.data;
 
       // Store tokens and user data
-      await storage.setAuthToken(token);
+      await storage.setAuthToken(accessToken);
       await storage.setRefreshToken(refreshToken);
       await storage.setUserData(user);
 
-      return { success: true, data: response.data };
+      return { success: true, data: { user, token: accessToken, refreshToken } };
     } catch (error) {
       return { success: false, error: handleApiError(error) };
     }
@@ -30,15 +30,15 @@ export const authService = {
   // Register new user
   async register(credentials: RegisterCredentials): Promise<ApiResponse<AuthResponse>> {
     try {
-      const response = await api.post<AuthResponse>('/auth/register', credentials);
-      const { user, token, refreshToken } = response.data;
+      const response = await api.post('/auth/register', credentials);
+      const { user, accessToken, refreshToken } = response.data.data;
 
       // Store tokens and user data
-      await storage.setAuthToken(token);
+      await storage.setAuthToken(accessToken);
       await storage.setRefreshToken(refreshToken);
       await storage.setUserData(user);
 
-      return { success: true, data: response.data };
+      return { success: true, data: { user, token: accessToken, refreshToken } };
     } catch (error) {
       return { success: false, error: handleApiError(error) };
     }
@@ -47,14 +47,14 @@ export const authService = {
   // Login with Google
   async loginWithGoogle(idToken: string): Promise<ApiResponse<AuthResponse>> {
     try {
-      const response = await api.post<AuthResponse>('/auth/google', { idToken });
-      const { user, token, refreshToken } = response.data;
+      const response = await api.post('/auth/google', { idToken });
+      const { user, accessToken, refreshToken } = response.data.data;
 
-      await storage.setAuthToken(token);
+      await storage.setAuthToken(accessToken);
       await storage.setRefreshToken(refreshToken);
       await storage.setUserData(user);
 
-      return { success: true, data: response.data };
+      return { success: true, data: { user, token: accessToken, refreshToken } };
     } catch (error) {
       return { success: false, error: handleApiError(error) };
     }
@@ -63,17 +63,17 @@ export const authService = {
   // Login with Apple
   async loginWithApple(identityToken: string, fullName?: { givenName?: string; familyName?: string }): Promise<ApiResponse<AuthResponse>> {
     try {
-      const response = await api.post<AuthResponse>('/auth/apple', {
+      const response = await api.post('/auth/apple', {
         identityToken,
         fullName,
       });
-      const { user, token, refreshToken } = response.data;
+      const { user, accessToken, refreshToken } = response.data.data;
 
-      await storage.setAuthToken(token);
+      await storage.setAuthToken(accessToken);
       await storage.setRefreshToken(refreshToken);
       await storage.setUserData(user);
 
-      return { success: true, data: response.data };
+      return { success: true, data: { user, token: accessToken, refreshToken } };
     } catch (error) {
       return { success: false, error: handleApiError(error) };
     }
@@ -100,14 +100,15 @@ export const authService = {
         return { success: false, error: 'No refresh token' };
       }
 
-      const response = await api.post<{ token: string; refreshToken: string }>('/auth/refresh', {
+      const response = await api.post('/auth/refresh', {
         refreshToken,
       });
 
-      await storage.setAuthToken(response.data.token);
-      await storage.setRefreshToken(response.data.refreshToken);
+      const { accessToken, refreshToken: newRefreshToken } = response.data.data;
+      await storage.setAuthToken(accessToken);
+      await storage.setRefreshToken(newRefreshToken);
 
-      return { success: true, data: response.data };
+      return { success: true, data: { token: accessToken, refreshToken: newRefreshToken } };
     } catch (error) {
       await storage.clearAuth();
       return { success: false, error: handleApiError(error) };
@@ -123,16 +124,18 @@ export const authService = {
       if (token && user) {
         // Optionally verify token with server
         try {
-          const response = await api.get<User>('/users/me');
-          await storage.setUserData(response.data);
-          return { isAuthenticated: true, user: response.data };
+          const response = await api.get('/users/me');
+          const userData = response.data.data.user;
+          await storage.setUserData(userData);
+          return { isAuthenticated: true, user: userData };
         } catch {
           // Token might be expired, try refresh
           const refreshResult = await this.refreshToken();
           if (refreshResult.success) {
-            const userResponse = await api.get<User>('/users/me');
-            await storage.setUserData(userResponse.data);
-            return { isAuthenticated: true, user: userResponse.data };
+            const userResponse = await api.get('/users/me');
+            const userData = userResponse.data.data.user;
+            await storage.setUserData(userData);
+            return { isAuthenticated: true, user: userData };
           }
         }
       }

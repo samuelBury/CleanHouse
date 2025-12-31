@@ -62,7 +62,7 @@ export default function SplashScreen({onFinish}: SplashScreenProps) {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
       <ImageBackground
-        source={require('../../assets/images/Spash.jpg')}
+        source={require('../../BackgroundSplash.jpeg')}
         style={styles.backgroundImage}
         resizeMode="cover"
         imageStyle={styles.imageStyle}

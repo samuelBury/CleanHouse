@@ -6,11 +6,11 @@ export const paymentService = {
   // Create payment intent for a booking
   async createPaymentIntent(amount: number, bookingId?: string): Promise<ApiResponse<PaymentIntent>> {
     try {
-      const response = await api.post<PaymentIntent>('/payments/create-intent', {
+      const response = await api.post('/payments/create-intent', {
         amount,
         bookingId,
       });
-      return { success: true, data: response.data };
+      return { success: true, data: response.data.data };
     } catch (error) {
       return { success: false, error: handleApiError(error) };
     }
@@ -19,10 +19,10 @@ export const paymentService = {
   // Confirm payment
   async confirmPayment(paymentIntentId: string): Promise<ApiResponse<{ success: boolean }>> {
     try {
-      const response = await api.post<{ success: boolean }>('/payments/confirm', {
+      const response = await api.post('/payments/confirm', {
         paymentIntentId,
       });
-      return { success: true, data: response.data };
+      return { success: true, data: response.data.data };
     } catch (error) {
       return { success: false, error: handleApiError(error) };
     }
@@ -31,20 +31,21 @@ export const paymentService = {
   // Get user's payment methods
   async getPaymentMethods(): Promise<ApiResponse<PaymentMethod[]>> {
     try {
-      const response = await api.get<PaymentMethod[]>('/payments/methods');
-      return { success: true, data: response.data };
+      const response = await api.get('/payments/methods');
+      const methods = response.data?.data?.paymentMethods || response.data?.data || [];
+      return { success: true, data: Array.isArray(methods) ? methods : [] };
     } catch (error) {
-      return { success: false, error: handleApiError(error) };
+      return { success: false, error: handleApiError(error), data: [] };
     }
   },
 
   // Add new payment method
   async addPaymentMethod(paymentMethodId: string): Promise<ApiResponse<PaymentMethod>> {
     try {
-      const response = await api.post<PaymentMethod>('/payments/methods', {
+      const response = await api.post('/payments/methods', {
         paymentMethodId,
       });
-      return { success: true, data: response.data };
+      return { success: true, data: response.data.data };
     } catch (error) {
       return { success: false, error: handleApiError(error) };
     }
@@ -63,8 +64,8 @@ export const paymentService = {
   // Set default payment method
   async setDefaultPaymentMethod(id: string): Promise<ApiResponse<PaymentMethod>> {
     try {
-      const response = await api.put<PaymentMethod>(`/payments/methods/${id}/default`);
-      return { success: true, data: response.data };
+      const response = await api.put(`/payments/methods/${id}/default`);
+      return { success: true, data: response.data.data };
     } catch (error) {
       return { success: false, error: handleApiError(error) };
     }
@@ -73,8 +74,8 @@ export const paymentService = {
   // Create setup intent for adding card without immediate payment
   async createSetupIntent(): Promise<ApiResponse<{ clientSecret: string }>> {
     try {
-      const response = await api.post<{ clientSecret: string }>('/payments/setup-intent');
-      return { success: true, data: response.data };
+      const response = await api.post('/payments/setup-intent');
+      return { success: true, data: response.data.data };
     } catch (error) {
       return { success: false, error: handleApiError(error) };
     }
@@ -83,11 +84,11 @@ export const paymentService = {
   // Process refund
   async requestRefund(bookingId: string, reason?: string): Promise<ApiResponse<{ refundId: string }>> {
     try {
-      const response = await api.post<{ refundId: string }>('/payments/refund', {
+      const response = await api.post('/payments/refund', {
         bookingId,
         reason,
       });
-      return { success: true, data: response.data };
+      return { success: true, data: response.data.data };
     } catch (error) {
       return { success: false, error: handleApiError(error) };
     }

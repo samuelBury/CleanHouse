@@ -167,6 +167,10 @@ const AuthScreen: React.FC = () => {
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={true}
+                  autoComplete="off"
+                  textContentType="oneTimeCode"
+                  autoCorrect={false}
+                  spellCheck={false}
                 />
               </View>
 
@@ -181,6 +185,10 @@ const AuthScreen: React.FC = () => {
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
                     secureTextEntry={true}
+                    autoComplete="off"
+                    textContentType="oneTimeCode"
+                    autoCorrect={false}
+                    spellCheck={false}
                   />
                 </View>
               )}

@@ -43,12 +43,12 @@ api.interceptors.response.use(
             refreshToken,
           });
 
-          const { token, refreshToken: newRefreshToken } = response.data;
-          await storage.setAuthToken(token);
+          const { accessToken, refreshToken: newRefreshToken } = response.data.data;
+          await storage.setAuthToken(accessToken);
           await storage.setRefreshToken(newRefreshToken);
 
           if (originalRequest.headers) {
-            originalRequest.headers.Authorization = `Bearer ${token}`;
+            originalRequest.headers.Authorization = `Bearer ${accessToken}`;
           }
           return api(originalRequest);
         }

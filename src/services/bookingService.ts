@@ -6,18 +6,19 @@ export const bookingService = {
   // Get all bookings for current user
   async getBookings(): Promise<ApiResponse<Booking[]>> {
     try {
-      const response = await api.get<Booking[]>('/bookings');
-      return { success: true, data: response.data };
+      const response = await api.get('/bookings');
+      const bookings = response.data?.data?.bookings || response.data?.data || [];
+      return { success: true, data: Array.isArray(bookings) ? bookings : [] };
     } catch (error) {
-      return { success: false, error: handleApiError(error) };
+      return { success: false, error: handleApiError(error), data: [] };
     }
   },
 
   // Get booking by ID
   async getBookingById(id: string): Promise<ApiResponse<Booking>> {
     try {
-      const response = await api.get<Booking>(`/bookings/${id}`);
-      return { success: true, data: response.data };
+      const response = await api.get(`/bookings/${id}`);
+      return { success: true, data: response.data.data };
     } catch (error) {
       return { success: false, error: handleApiError(error) };
     }
@@ -26,8 +27,8 @@ export const bookingService = {
   // Create new booking
   async createBooking(data: CreateBookingData): Promise<ApiResponse<Booking>> {
     try {
-      const response = await api.post<Booking>('/bookings', data);
-      return { success: true, data: response.data };
+      const response = await api.post('/bookings', data);
+      return { success: true, data: response.data.data };
     } catch (error) {
       return { success: false, error: handleApiError(error) };
     }
@@ -36,8 +37,8 @@ export const bookingService = {
   // Update booking
   async updateBooking(id: string, data: Partial<CreateBookingData>): Promise<ApiResponse<Booking>> {
     try {
-      const response = await api.put<Booking>(`/bookings/${id}`, data);
-      return { success: true, data: response.data };
+      const response = await api.put(`/bookings/${id}`, data);
+      return { success: true, data: response.data.data };
     } catch (error) {
       return { success: false, error: handleApiError(error) };
     }
@@ -46,8 +47,8 @@ export const bookingService = {
   // Cancel booking
   async cancelBooking(id: string): Promise<ApiResponse<Booking>> {
     try {
-      const response = await api.delete<Booking>(`/bookings/${id}`);
-      return { success: true, data: response.data };
+      const response = await api.delete(`/bookings/${id}`);
+      return { success: true, data: response.data.data };
     } catch (error) {
       return { success: false, error: handleApiError(error) };
     }
@@ -56,40 +57,44 @@ export const bookingService = {
   // Get bookings by status
   async getBookingsByStatus(status: string): Promise<ApiResponse<Booking[]>> {
     try {
-      const response = await api.get<Booking[]>(`/bookings?status=${status}`);
-      return { success: true, data: response.data };
+      const response = await api.get(`/bookings?status=${status}`);
+      const bookings = response.data?.data?.bookings || response.data?.data || [];
+      return { success: true, data: Array.isArray(bookings) ? bookings : [] };
     } catch (error) {
-      return { success: false, error: handleApiError(error) };
+      return { success: false, error: handleApiError(error), data: [] };
     }
   },
 
   // Get bookings for a specific date
   async getBookingsByDate(date: string): Promise<ApiResponse<Booking[]>> {
     try {
-      const response = await api.get<Booking[]>(`/bookings?date=${date}`);
-      return { success: true, data: response.data };
+      const response = await api.get(`/bookings?date=${date}`);
+      const bookings = response.data?.data?.bookings || response.data?.data || [];
+      return { success: true, data: Array.isArray(bookings) ? bookings : [] };
     } catch (error) {
-      return { success: false, error: handleApiError(error) };
+      return { success: false, error: handleApiError(error), data: [] };
     }
   },
 
   // Get upcoming bookings
   async getUpcomingBookings(): Promise<ApiResponse<Booking[]>> {
     try {
-      const response = await api.get<Booking[]>('/bookings/upcoming');
-      return { success: true, data: response.data };
+      const response = await api.get('/bookings/upcoming');
+      const bookings = response.data?.data || [];
+      return { success: true, data: Array.isArray(bookings) ? bookings : [] };
     } catch (error) {
-      return { success: false, error: handleApiError(error) };
+      return { success: false, error: handleApiError(error), data: [] };
     }
   },
 
   // Get booking history
   async getBookingHistory(): Promise<ApiResponse<Booking[]>> {
     try {
-      const response = await api.get<Booking[]>('/bookings/history');
-      return { success: true, data: response.data };
+      const response = await api.get('/bookings/history');
+      const bookings = response.data?.data || [];
+      return { success: true, data: Array.isArray(bookings) ? bookings : [] };
     } catch (error) {
-      return { success: false, error: handleApiError(error) };
+      return { success: false, error: handleApiError(error), data: [] };
     }
   },
 };

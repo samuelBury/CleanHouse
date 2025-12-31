@@ -2,7 +2,7 @@
 
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL: __DEV__ ? 'http://localhost:3000/api' : 'https://api.cleanhouse.com/api',
+  BASE_URL: __DEV__ ? 'http://192.168.1.179:3000/api' : 'https://api.cleanhouse.com/api',
   TIMEOUT: 10000,
 };
 

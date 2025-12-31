@@ -44,8 +44,8 @@ export const registerValidation = [
     .withMessage('Le nom doit contenir entre 2 et 100 caractères'),
   body('phone')
     .optional()
-    .isMobilePhone('fr-FR')
-    .withMessage('Numéro de téléphone invalide'),
+    .matches(/^(\+33|0)[1-9](\s?\d{2}){4}$/)
+    .withMessage('Numéro de téléphone invalide (ex: 06 12 34 56 78)'),
 ];
 
 export const loginValidation = [
