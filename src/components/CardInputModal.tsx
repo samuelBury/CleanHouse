@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   Modal,
   StyleSheet,
-  TextInput,
   ActivityIndicator,
   Alert,
   Keyboard,
@@ -13,119 +12,77 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import {CardField, useStripe, CardFieldInput} from '@stripe/stripe-react-native';
 import {Colors} from '../config/theme';
 
 interface CardInputModalProps {
   visible: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (paymentIntentId: string) => void;
+  onError?: (error: string) => void;
   amount: string;
-  isIndeterminate: boolean;
+  clientSecret: string;
+  isIndeterminate?: boolean;
+  saveCard?: boolean;
 }
 
 export default function CardInputModal({
   visible,
   onClose,
   onSuccess,
+  onError,
   amount,
-  isIndeterminate,
+  clientSecret,
+  isIndeterminate = false,
+  saveCard = false,
 }: CardInputModalProps) {
-  const [cardNumber, setCardNumber] = useState('');
-  const [expiryDate, setExpiryDate] = useState('');
-  const [cvv, setCvv] = useState('');
-  const [cardHolder, setCardHolder] = useState('');
+  const {confirmPayment} = useStripe();
   const [isLoading, setIsLoading] = useState(false);
-
-  // Formater le numéro de carte (ajouter des espaces tous les 4 chiffres)
-  const formatCardNumber = (text: string) => {
-    const cleaned = text.replace(/\s/g, '').replace(/\D/g, '');
-    const formatted = cleaned.match(/.{1,4}/g)?.join(' ') || cleaned;
-    return formatted.substring(0, 19); // 16 chiffres + 3 espaces
-  };
-
-  // Formater la date d'expiration (MM/YY)
-  const formatExpiryDate = (text: string) => {
-    const cleaned = text.replace(/\D/g, '');
-    if (cleaned.length >= 2) {
-      return cleaned.substring(0, 2) + '/' + cleaned.substring(2, 4);
-    }
-    return cleaned;
-  };
-
-  // Validation basique de la carte (algorithme de Luhn)
-  const validateCardNumber = (number: string) => {
-    const cleaned = number.replace(/\s/g, '');
-    if (cleaned.length !== 16) return false;
-
-    let sum = 0;
-    let isEven = false;
-
-    for (let i = cleaned.length - 1; i >= 0; i--) {
-      let digit = parseInt(cleaned[i], 10);
-
-      if (isEven) {
-        digit *= 2;
-        if (digit > 9) digit -= 9;
-      }
-
-      sum += digit;
-      isEven = !isEven;
-    }
-
-    return sum % 10 === 0;
-  };
-
-  // Valider la date d'expiration
-  const validateExpiryDate = (date: string) => {
-    const parts = date.split('/');
-    if (parts.length !== 2) return false;
-
-    const month = parseInt(parts[0], 10);
-    const year = parseInt('20' + parts[1], 10);
-
-    if (month < 1 || month > 12) return false;
-
-    const now = new Date();
-    const expiry = new Date(year, month - 1);
-
-    return expiry > now;
-  };
+  const [cardComplete, setCardComplete] = useState(false);
 
   const handleSubmit = async () => {
-    // Validation
-    if (!cardHolder.trim()) {
-      Alert.alert('Erreur', 'Veuillez entrer le nom du titulaire');
+    if (!cardComplete) {
+      Alert.alert('Erreur', 'Veuillez remplir tous les champs de la carte');
       return;
     }
 
-    if (!validateCardNumber(cardNumber)) {
-      Alert.alert('Erreur', 'Numéro de carte invalide');
-      return;
-    }
-
-    if (!validateExpiryDate(expiryDate)) {
-      Alert.alert('Erreur', "Date d'expiration invalide");
-      return;
-    }
-
-    if (cvv.length < 3) {
-      Alert.alert('Erreur', 'CVV invalide');
+    if (!clientSecret) {
+      Alert.alert('Erreur', 'Erreur de configuration du paiement');
       return;
     }
 
     setIsLoading(true);
+    Keyboard.dismiss();
 
-    // Simuler un appel API Stripe
-    // En production, vous utiliseriez stripe.createPaymentMethod() ou stripe.confirmPayment()
-    setTimeout(() => {
+    try {
+      const {error, paymentIntent} = await confirmPayment(clientSecret, {
+        paymentMethodType: 'Card',
+        paymentMethodData: {
+          billingDetails: {},
+        },
+      });
+
+      if (error) {
+        console.log('Payment error:', error);
+        const errorMessage = error.message || 'Le paiement a échoué';
+        Alert.alert('Erreur de paiement', errorMessage);
+        onError?.(errorMessage);
+      } else if (paymentIntent) {
+        console.log('Payment successful:', paymentIntent.id);
+        onSuccess(paymentIntent.id);
+      }
+    } catch (err) {
+      console.log('Payment exception:', err);
+      const errorMessage = 'Une erreur est survenue lors du paiement';
+      Alert.alert('Erreur', errorMessage);
+      onError?.(errorMessage);
+    } finally {
       setIsLoading(false);
-      // Réinitialiser le formulaire
-      setCardNumber('');
-      setExpiryDate('');
-      setCvv('');
-      setCardHolder('');
-      onSuccess();
-    }, 2000);
+    }
+  };
+
+  const handleCardChange = (cardDetails: CardFieldInput.Details) => {
+    setCardComplete(cardDetails.complete);
   };
 
   return (
@@ -136,136 +93,98 @@ export default function CardInputModal({
       onRequestClose={onClose}
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={styles.modalOverlay}>
-        <TouchableOpacity
-          style={styles.modalBackdrop}
-          activeOpacity={1}
-          onPress={() => {
-            Keyboard.dismiss();
-            onClose();
-          }}
-        />
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardAvoid}
-        >
-        <View style={styles.modalContent}>
-          {/* Modal Header */}
-          <View style={styles.modalHeader}>
-            <View style={styles.modalHeaderIcon}>
-              <Text style={styles.modalIconText}>💳</Text>
-            </View>
-            <View style={styles.modalHeaderTitleContainer}>
-              <Text style={styles.modalHeaderTitle}>Carte bancaire</Text>
-              <Text style={styles.modalHeaderSubtitle}>
-                {isIndeterminate
-                  ? `Pré-autorisation de ${amount}`
-                  : `Montant: ${amount}`
-                }
-              </Text>
-            </View>
-            <TouchableOpacity style={styles.modalCloseButton} onPress={onClose}>
-              <Text style={styles.modalCloseText}>✕</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Card Form */}
-          <View style={styles.formContainer}>
-            {/* Info pour durée indéterminée */}
-            {isIndeterminate && (
-              <View style={styles.infoBox}>
-                <Text style={styles.infoIcon}>ℹ️</Text>
-                <Text style={styles.infoText}>
-                  Une pré-autorisation sera effectuée. Le montant final sera débité à la fin de la prestation.
-                </Text>
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => {
+              Keyboard.dismiss();
+              if (!isLoading) onClose();
+            }}
+          />
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.keyboardAvoid}
+          >
+            <View style={styles.modalContent}>
+              {/* Modal Header */}
+              <View style={styles.modalHeader}>
+                <View style={styles.modalHeaderIcon}>
+                  <Text style={styles.modalIconText}>💳</Text>
+                </View>
+                <View style={styles.modalHeaderTitleContainer}>
+                  <Text style={styles.modalHeaderTitle}>Carte bancaire</Text>
+                  <Text style={styles.modalHeaderSubtitle}>
+                    {isIndeterminate
+                      ? `Pré-autorisation de ${amount}`
+                      : `Montant: ${amount}`}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.modalCloseButton}
+                  onPress={onClose}
+                  disabled={isLoading}
+                >
+                  <Text style={styles.modalCloseText}>✕</Text>
+                </TouchableOpacity>
               </View>
-            )}
 
-            {/* Titulaire de la carte */}
-            <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>Titulaire de la carte</Text>
-              <TextInput
-                style={styles.formInput}
-                placeholder="JEAN DUPONT"
-                placeholderTextColor="#999"
-                value={cardHolder}
-                onChangeText={(text) => setCardHolder(text.toUpperCase())}
-                autoCapitalize="characters"
-              />
-            </View>
+              {/* Card Form */}
+              <View style={styles.formContainer}>
+                {/* Info pour durée indéterminée */}
+                {isIndeterminate && (
+                  <View style={styles.infoBox}>
+                    <Text style={styles.infoIcon}>ℹ️</Text>
+                    <Text style={styles.infoText}>
+                      Une pré-autorisation sera effectuée. Le montant final sera
+                      débité à la fin de la prestation.
+                    </Text>
+                  </View>
+                )}
 
-            {/* Numéro de carte */}
-            <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>Numéro de carte</Text>
-              <TextInput
-                style={styles.formInput}
-                placeholder="1234 5678 9012 3456"
-                placeholderTextColor="#999"
-                value={cardNumber}
-                onChangeText={(text) => setCardNumber(formatCardNumber(text))}
-                keyboardType="numeric"
-                maxLength={19}
-              />
-            </View>
+                {/* Stripe CardField */}
+                <View style={styles.formGroup}>
+                  <Text style={styles.formLabel}>Informations de carte</Text>
+                  <CardField
+                    postalCodeEnabled={false}
+                    placeholders={{
+                      number: '4242 4242 4242 4242',
+                    }}
+                    cardStyle={styles.cardFieldStyle}
+                    style={styles.cardField}
+                    onCardChange={handleCardChange}
+                  />
+                </View>
 
-            {/* Date d'expiration et CVV */}
-            <View style={styles.rowGroup}>
-              <View style={[styles.formGroup, {flex: 1, marginRight: 12}]}>
-                <Text style={styles.formLabel}>Date d'expiration</Text>
-                <TextInput
-                  style={styles.formInput}
-                  placeholder="MM/YY"
-                  placeholderTextColor="#999"
-                  value={expiryDate}
-                  onChangeText={(text) => setExpiryDate(formatExpiryDate(text))}
-                  keyboardType="numeric"
-                  maxLength={5}
-                />
-              </View>
-              <View style={[styles.formGroup, {flex: 1}]}>
-                <Text style={styles.formLabel}>CVV</Text>
-                <TextInput
-                  style={styles.formInput}
-                  placeholder="123"
-                  placeholderTextColor="#999"
-                  value={cvv}
-                  onChangeText={(text) => setCvv(text.replace(/\D/g, '').substring(0, 4))}
-                  keyboardType="numeric"
-                  maxLength={4}
-                  secureTextEntry
-                />
+                {/* Sécurité */}
+                <View style={styles.securityInfo}>
+                  <Text style={styles.securityIcon}>🔒</Text>
+                  <Text style={styles.securityText}>
+                    Paiement sécurisé par Stripe
+                  </Text>
+                </View>
+
+                {/* Bouton de confirmation */}
+                <TouchableOpacity
+                  style={[
+                    styles.confirmButton,
+                    (!cardComplete || isLoading) && styles.confirmButtonDisabled,
+                  ]}
+                  onPress={handleSubmit}
+                  disabled={!cardComplete || isLoading}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.confirmButtonText}>
+                      {isIndeterminate ? 'Autoriser le paiement' : `Payer ${amount}`}
+                    </Text>
+                  )}
+                </TouchableOpacity>
               </View>
             </View>
-
-            {/* Sécurité */}
-            <View style={styles.securityInfo}>
-              <Text style={styles.securityIcon}>🔒</Text>
-              <Text style={styles.securityText}>
-                Paiement sécurisé par Stripe
-              </Text>
-            </View>
-
-            {/* Bouton de confirmation */}
-            <TouchableOpacity
-              style={[
-                styles.confirmButton,
-                isLoading && styles.confirmButtonDisabled,
-              ]}
-              onPress={handleSubmit}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.confirmButtonText}>
-                  {isIndeterminate ? 'Autoriser le paiement' : `Payer ${amount}`}
-                </Text>
-              )}
-            </TouchableOpacity>
-          </View>
+          </KeyboardAvoidingView>
         </View>
-        </KeyboardAvoidingView>
-      </View>
       </TouchableWithoutFeedback>
     </Modal>
   );
@@ -365,17 +284,17 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
     marginBottom: 8,
   },
-  formInput: {
-    backgroundColor: Colors.background.secondary,
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: Colors.text.primary,
-    borderWidth: 1,
-    borderColor: Colors.border.light,
+  cardField: {
+    width: '100%',
+    height: 50,
+    marginVertical: 8,
   },
-  rowGroup: {
-    flexDirection: 'row',
+  cardFieldStyle: {
+    backgroundColor: Colors.background.secondary,
+    textColor: Colors.text.primary,
+    borderRadius: 12,
+    fontSize: 16,
+    placeholderColor: '#999',
   },
   securityInfo: {
     flexDirection: 'row',

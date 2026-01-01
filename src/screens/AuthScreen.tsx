@@ -18,6 +18,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { validators, validationMessages } from '../utils/validators';
 import { formatters } from '../utils/formatters';
+import { authService } from '../services/authService';
 
 const { width, height } = Dimensions.get('window');
 
@@ -30,6 +31,9 @@ const AuthScreen: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [showVerificationMessage, setShowVerificationMessage] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState('');
+  const [resendingEmail, setResendingEmail] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -44,7 +48,27 @@ const AuthScreen: React.FC = () => {
 
     const result = await login({ email, password });
     if (!result.success) {
-      Alert.alert('Erreur', result.error || 'Échec de la connexion');
+      // Vérifier si l'erreur est liée à la vérification email
+      if (result.error?.includes('vérifier votre email')) {
+        setVerificationEmail(email);
+        setShowVerificationMessage(true);
+      } else {
+        Alert.alert('Erreur', result.error || 'Échec de la connexion');
+      }
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!verificationEmail) return;
+
+    setResendingEmail(true);
+    const result = await authService.resendVerification(verificationEmail);
+    setResendingEmail(false);
+
+    if (result.success) {
+      Alert.alert('Email envoyé', 'Un nouveau lien de vérification a été envoyé à votre adresse email.');
+    } else {
+      Alert.alert('Erreur', result.error || "Impossible d'envoyer l'email");
     }
   };
 
@@ -70,6 +94,14 @@ const AuthScreen: React.FC = () => {
     }
 
     const result = await register({ email, password, name, phone: phone.replace(/\s/g, '') });
+
+    // Vérifier si l'inscription nécessite une vérification email
+    if (result.success && result.requiresVerification) {
+      setVerificationEmail(email);
+      setShowVerificationMessage(true);
+      return;
+    }
+
     if (!result.success) {
       Alert.alert('Erreur', result.error || "Échec de l'inscription");
     }
@@ -111,7 +143,43 @@ const AuthScreen: React.FC = () => {
               <Text style={styles.subtitle}>Services de ménage à Paris</Text>
             </View>
 
-            {/* Formulaire */}
+            {/* Message de vérification email */}
+            {showVerificationMessage ? (
+              <View style={styles.verificationSection}>
+                <Text style={styles.verificationIcon}>📧</Text>
+                <Text style={styles.verificationTitle}>Vérifiez votre email</Text>
+                <Text style={styles.verificationText}>
+                  Un email de vérification a été envoyé à{'\n'}
+                  <Text style={styles.verificationEmail}>{verificationEmail}</Text>
+                </Text>
+                <Text style={styles.verificationSubtext}>
+                  Cliquez sur le lien dans l'email pour activer votre compte.
+                </Text>
+
+                <TouchableOpacity
+                  style={styles.resendButton}
+                  onPress={handleResendVerification}
+                  disabled={resendingEmail}
+                >
+                  {resendingEmail ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.resendButtonText}>Renvoyer l'email</Text>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.backToLoginButton}
+                  onPress={() => {
+                    setShowVerificationMessage(false);
+                    setIsLogin(true);
+                  }}
+                >
+                  <Text style={styles.backToLoginText}>Retour à la connexion</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+            /* Formulaire */
             <View style={styles.formSection}>
               {/* Champs d'inscription uniquement */}
               {!isLogin && (
@@ -256,6 +324,7 @@ const AuthScreen: React.FC = () => {
                 </TouchableOpacity>
               </View>
             </View>
+            )}
           </ScrollView>
         </KeyboardAvoidingView>
       </ImageBackground>
@@ -433,6 +502,57 @@ const styles = StyleSheet.create({
     color: '#4cb04f',
     fontSize: 14,
     fontWeight: '600',
+  },
+  verificationSection: {
+    alignItems: 'center',
+    padding: 20,
+  },
+  verificationIcon: {
+    fontSize: 60,
+    marginBottom: 20,
+  },
+  verificationTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 16,
+  },
+  verificationText: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.8)',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  verificationEmail: {
+    fontWeight: 'bold',
+    color: '#4cb04f',
+  },
+  verificationSubtext: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.6)',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  resendButton: {
+    backgroundColor: '#4cb04f',
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 25,
+    marginBottom: 16,
+    minWidth: 200,
+    alignItems: 'center',
+  },
+  resendButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  backToLoginButton: {
+    paddingVertical: 10,
+  },
+  backToLoginText: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 14,
   },
 });
 

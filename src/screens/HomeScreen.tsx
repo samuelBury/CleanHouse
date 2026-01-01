@@ -22,20 +22,24 @@ import BackgroundSVG from '../components/BackgroundSVG';
 
 import { useAuth } from '../context/AuthContext';
 import { useBooking } from '../context/BookingContext';
+import { useNotifications } from '../hooks/useNotifications';
 import { Colors } from '../config/theme';
 import type { ServiceType } from '../types';
 
 const HomeScreen: React.FC = () => {
   const { user, logout } = useAuth();
-  const { bookings, fetchBookings, createBooking, currentBooking, setCurrentBooking, clearCurrentBooking } = useBooking();
+  const { bookings, fetchBookings, createBooking, currentBooking, setCurrentBooking, clearCurrentBooking, hasPendingBooking, getPendingBooking } = useBooking();
+  const { notification } = useNotifications();
 
   // UI State
   const [refreshing, setRefreshing] = useState(false);
   const [showProfileDrawer, setShowProfileDrawer] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [showSearching, setShowSearching] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
+
+  // Afficher la recherche si une réservation est en attente
+  const showSearching = hasPendingBooking();
 
   // Booking state
   const [selectedService, setSelectedService] = useState<ServiceType | null>(null);
@@ -48,6 +52,19 @@ const HomeScreen: React.FC = () => {
   useEffect(() => {
     fetchBookings();
   }, []);
+
+  // Écouter les notifications pour détecter quand un pro accepte
+  useEffect(() => {
+    if (notification) {
+      const notifType = notification.request.content.data?.type;
+      if (notifType === 'booking_confirmed' || notifType === 'professional_assigned') {
+        // Rafraîchir les réservations → statut passera à 'confirmed'
+        fetchBookings();
+        // Afficher la confirmation
+        setShowConfirmation(true);
+      }
+    }
+  }, [notification]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -65,29 +82,22 @@ const HomeScreen: React.FC = () => {
     setShowPaymentModal(true);
   };
 
-  const handlePaymentConfirm = async (paymentMethod: string) => {
+  const handlePaymentConfirm = async (paymentIntentId: string) => {
     setShowPaymentModal(false);
-    setShowSearching(true);
 
-    // Simulate professional search
-    setTimeout(async () => {
-      setShowSearching(false);
-
-      // Create booking
-      if (selectedService) {
-        const result = await createBooking({
-          service: selectedService,
-          date: bookingDate,
-          time: bookingTime,
-          duration: bookingDuration,
-          address: bookingAddress,
-        });
-
-        if (result.success) {
-          setShowConfirmation(true);
-        }
-      }
-    }, 3000);
+    // Paiement réussi ! Créer la réservation avec le paymentIntentId
+    if (selectedService) {
+      await createBooking({
+        service: selectedService,
+        date: bookingDate,
+        time: bookingTime,
+        duration: bookingDuration,
+        address: bookingAddress,
+        paymentIntentId, // Associer le paiement à la réservation
+      });
+      // SearchingProfessional s'affichera car hasPendingBooking() sera true
+      // La confirmation s'affichera quand le pro acceptera (via notification)
+    }
   };
 
   const handleConfirmationClose = () => {
@@ -135,7 +145,7 @@ const HomeScreen: React.FC = () => {
         >
           <HeroCard />
           <ServicesSection onServiceSelect={handleServiceSelect} />
-          <BookingSection reservations={bookings} />
+          <BookingSection reservations={bookings || []} />
           <View style={styles.bottomPadding} />
         </ScrollView>
       </SafeAreaView>
@@ -177,9 +187,9 @@ const HomeScreen: React.FC = () => {
         user={user}
         onLogout={logout}
         stats={{
-          totalReservations: bookings.length,
-          hoursBooked: bookings.reduce((acc, b) => acc + b.duration, 0),
-          totalSpent: bookings.reduce((acc, b) => acc + b.price, 0),
+          totalReservations: (bookings || []).length,
+          hoursBooked: (bookings || []).reduce((acc, b) => acc + b.duration, 0),
+          totalSpent: (bookings || []).reduce((acc, b) => acc + b.price, 0),
         }}
       />
     </View>

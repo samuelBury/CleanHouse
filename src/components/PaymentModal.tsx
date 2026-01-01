@@ -1,18 +1,22 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   Modal,
   StyleSheet,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import CardInputModal from './CardInputModal';
 import {Colors} from '../config/theme';
+import {paymentService} from '../services/paymentService';
+import type {PaymentMethod} from '../types';
 
 interface PaymentModalProps {
   visible: boolean;
   onClose: () => void;
-  onConfirm: (paymentMethod: string) => void;
+  onConfirm: (paymentIntentId: string) => void;
   service: string;
   date: string;
   time: string;
@@ -20,139 +24,257 @@ interface PaymentModalProps {
   isIndeterminate: boolean;
 }
 
-export default function PaymentModal({visible, onClose, onConfirm, service, date, time, duration, isIndeterminate}: PaymentModalProps) {
+export default function PaymentModal({
+  visible,
+  onClose,
+  onConfirm,
+  service,
+  date,
+  time,
+  duration,
+  isIndeterminate,
+}: PaymentModalProps) {
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
   const [showCardInput, setShowCardInput] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [savedCards, setSavedCards] = useState<PaymentMethod[]>([]);
+  const [loadingCards, setLoadingCards] = useState(true);
 
-  const paymentMethods = [
-    {id: 'card', name: 'Carte bancaire', icon: '💳'},
-  ];
+  // Charger les cartes sauvegardées
+  useEffect(() => {
+    if (visible) {
+      loadSavedCards();
+    }
+  }, [visible]);
 
-  // Calculer le montant
+  const loadSavedCards = async () => {
+    setLoadingCards(true);
+    const result = await paymentService.getPaymentMethods();
+    if (result.success && result.data) {
+      setSavedCards(result.data);
+    }
+    setLoadingCards(false);
+  };
+
+  // Calculer le prix
+  const getRate = () => {
+    switch (service) {
+      case 'Ménage':
+        return 15;
+      case 'Repassage':
+        return 10;
+      case 'Ménage + Repassage':
+        return 20;
+      default:
+        return 15;
+    }
+  };
+
   const getPrice = () => {
-    const rate = service === 'Ménage' ? 15 : service === 'Repassage' ? 10 : 20;
+    const rate = getRate();
     if (isIndeterminate) {
       return `${rate}€/h`;
     }
     return `${rate * duration}€`;
   };
 
-  const handleCardSuccess = () => {
+  const getAmountInCents = () => {
+    const rate = getRate();
+    // Pour durée indéterminée, pré-autoriser 3h
+    const hours = isIndeterminate ? 3 : duration;
+    return rate * hours * 100; // Stripe utilise les centimes
+  };
+
+  const handlePaymentSelect = async () => {
+    if (!selectedPayment) return;
+
+    setIsLoading(true);
+
+    try {
+      // Créer un PaymentIntent via le backend
+      const result = await paymentService.createPaymentIntent(getAmountInCents());
+
+      if (result.success && result.data?.clientSecret) {
+        setClientSecret(result.data.clientSecret);
+        setShowCardInput(true);
+      } else {
+        Alert.alert('Erreur', result.error || 'Impossible de créer le paiement');
+      }
+    } catch (error) {
+      Alert.alert('Erreur', 'Une erreur est survenue');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCardSuccess = (paymentIntentId: string) => {
     setShowCardInput(false);
-    onConfirm('Carte bancaire');
+    setClientSecret('');
+    onConfirm(paymentIntentId);
+  };
+
+  const handleCardError = (error: string) => {
+    console.log('Payment error:', error);
+  };
+
+  const handleClose = () => {
+    setSelectedPayment(null);
+    setClientSecret('');
+    onClose();
   };
 
   return (
     <>
-    <Modal
-      animationType="slide"
-      transparent={true}
-      visible={visible}
-      onRequestClose={onClose}
-    >
-      <View style={styles.modalOverlay}>
-        <TouchableOpacity
-          style={styles.modalBackdrop}
-          activeOpacity={1}
-          onPress={onClose}
-        />
-        <View style={styles.modalContent}>
-          {/* Modal Header */}
-          <View style={styles.modalHeader}>
-            <View style={styles.modalHeaderIcon}>
-              <Text style={styles.modalIconText}>💳</Text>
-            </View>
-            <Text style={styles.modalHeaderTitle}>Moyen de paiement</Text>
-            <TouchableOpacity style={styles.modalCloseButton} onPress={onClose}>
-              <Text style={styles.modalCloseText}>✕</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Payment Methods */}
-          <View style={styles.paymentContainer}>
-            {/* Récapitulatif de la commande */}
-            <View style={styles.summaryContainer}>
-              <Text style={styles.summaryTitle}>Récapitulatif</Text>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Service</Text>
-                <Text style={styles.summaryValue}>{service}</Text>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={visible}
+        onRequestClose={handleClose}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={handleClose}
+          />
+          <View style={styles.modalContent}>
+            {/* Modal Header */}
+            <View style={styles.modalHeader}>
+              <View style={styles.modalHeaderIcon}>
+                <Text style={styles.modalIconText}>💳</Text>
               </View>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Date</Text>
-                <Text style={styles.summaryValue}>{date}</Text>
-              </View>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Heure</Text>
-                <Text style={styles.summaryValue}>{time}</Text>
-              </View>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Durée</Text>
-                <Text style={styles.summaryValue}>
-                  {isIndeterminate ? 'Indéterminée' : `${duration}h`}
-                </Text>
-              </View>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Prix</Text>
-                <Text style={styles.summaryPrice}>
-                  {isIndeterminate
-                    ? `${service === 'Ménage' ? '15' : service === 'Repassage' ? '10' : '20'}€/h`
-                    : `${(service === 'Ménage' ? 15 : service === 'Repassage' ? 10 : 20) * duration}€`
-                  }
-                </Text>
-              </View>
+              <Text style={styles.modalHeaderTitle}>Moyen de paiement</Text>
+              <TouchableOpacity style={styles.modalCloseButton} onPress={handleClose}>
+                <Text style={styles.modalCloseText}>✕</Text>
+              </TouchableOpacity>
             </View>
 
-            <Text style={styles.sectionTitle}>Choisissez votre méthode de paiement</Text>
+            {/* Payment Methods */}
+            <View style={styles.paymentContainer}>
+              {/* Récapitulatif de la commande */}
+              <View style={styles.summaryContainer}>
+                <Text style={styles.summaryTitle}>Récapitulatif</Text>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Service</Text>
+                  <Text style={styles.summaryValue}>{service}</Text>
+                </View>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Date</Text>
+                  <Text style={styles.summaryValue}>{date}</Text>
+                </View>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Heure</Text>
+                  <Text style={styles.summaryValue}>{time}</Text>
+                </View>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Durée</Text>
+                  <Text style={styles.summaryValue}>
+                    {isIndeterminate ? 'Indéterminée' : `${duration}h`}
+                  </Text>
+                </View>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Prix</Text>
+                  <Text style={styles.summaryPrice}>{getPrice()}</Text>
+                </View>
+              </View>
 
-            {paymentMethods.map((method) => (
+              <Text style={styles.sectionTitle}>Choisissez votre méthode de paiement</Text>
+
+              {/* Cartes sauvegardées */}
+              {loadingCards ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="small" color={Colors.primary} />
+                </View>
+              ) : (
+                <>
+                  {savedCards.map((card) => (
+                    <TouchableOpacity
+                      key={card.id}
+                      style={[
+                        styles.paymentOption,
+                        selectedPayment === card.id && styles.paymentOptionSelected,
+                      ]}
+                      onPress={() => setSelectedPayment(card.id)}
+                    >
+                      <View style={styles.paymentIconContainer}>
+                        <Text style={styles.paymentIcon}>💳</Text>
+                      </View>
+                      <View style={styles.cardInfo}>
+                        <Text style={styles.paymentName}>
+                          {card.brand} •••• {card.last4}
+                        </Text>
+                        <Text style={styles.cardExpiry}>
+                          Expire {card.expMonth}/{card.expYear}
+                        </Text>
+                      </View>
+                      {card.isDefault && (
+                        <View style={styles.defaultBadge}>
+                          <Text style={styles.defaultBadgeText}>Par défaut</Text>
+                        </View>
+                      )}
+                      <View style={styles.radioButton}>
+                        {selectedPayment === card.id && (
+                          <View style={styles.radioButtonInner} />
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </>
+              )}
+
+              {/* Option nouvelle carte */}
               <TouchableOpacity
-                key={method.id}
                 style={[
                   styles.paymentOption,
-                  selectedPayment === method.id && styles.paymentOptionSelected,
+                  selectedPayment === 'new_card' && styles.paymentOptionSelected,
                 ]}
-                onPress={() => setSelectedPayment(method.id)}
+                onPress={() => setSelectedPayment('new_card')}
               >
                 <View style={styles.paymentIconContainer}>
-                  <Text style={styles.paymentIcon}>{method.icon}</Text>
+                  <Text style={styles.paymentIcon}>➕</Text>
                 </View>
-                <Text style={styles.paymentName}>{method.name}</Text>
+                <Text style={styles.paymentName}>Nouvelle carte</Text>
                 <View style={styles.radioButton}>
-                  {selectedPayment === method.id && (
+                  {selectedPayment === 'new_card' && (
                     <View style={styles.radioButtonInner} />
                   )}
                 </View>
               </TouchableOpacity>
-            ))}
 
-            {/* Confirm Button */}
-            <TouchableOpacity
-              style={[
-                styles.confirmButton,
-                !selectedPayment && styles.confirmButtonDisabled,
-              ]}
-              disabled={!selectedPayment}
-              onPress={() => {
-                if (selectedPayment === 'card') {
-                  setShowCardInput(true);
-                }
-              }}
-            >
-              <Text style={styles.confirmButtonText}>Continuer</Text>
-            </TouchableOpacity>
+              {/* Confirm Button */}
+              <TouchableOpacity
+                style={[
+                  styles.confirmButton,
+                  (!selectedPayment || isLoading) && styles.confirmButtonDisabled,
+                ]}
+                disabled={!selectedPayment || isLoading}
+                onPress={handlePaymentSelect}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.confirmButtonText}>Continuer</Text>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-      </View>
-    </Modal>
+      </Modal>
 
-    {/* Card Input Modal - en dehors de PaymentModal */}
-    <CardInputModal
-      visible={showCardInput}
-      onClose={() => setShowCardInput(false)}
-      onSuccess={handleCardSuccess}
-      amount={getPrice()}
-      isIndeterminate={isIndeterminate}
-    />
+      {/* Card Input Modal */}
+      <CardInputModal
+        visible={showCardInput}
+        onClose={() => {
+          setShowCardInput(false);
+          setClientSecret('');
+        }}
+        onSuccess={handleCardSuccess}
+        onError={handleCardError}
+        amount={getPrice()}
+        clientSecret={clientSecret}
+        isIndeterminate={isIndeterminate}
+      />
     </>
   );
 }
@@ -171,7 +293,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingBottom: 20,
-    maxHeight: '80%',
+    maxHeight: '85%',
   },
   modalHeader: {
     borderTopLeftRadius: 24,
@@ -251,7 +373,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: Colors.text.primary,
-    marginBottom: 20,
+    marginBottom: 16,
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
   },
   paymentOption: {
     flexDirection: 'row',
@@ -265,7 +391,7 @@ const styles = StyleSheet.create({
   },
   paymentOptionSelected: {
     borderColor: Colors.primary,
-    backgroundColor: '#e3f2fd',
+    backgroundColor: '#e8f5e9',
   },
   paymentIconContainer: {
     width: 40,
@@ -277,13 +403,32 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   paymentIcon: {
-    fontSize: 24,
+    fontSize: 20,
+  },
+  cardInfo: {
+    flex: 1,
   },
   paymentName: {
-    flex: 1,
     fontSize: 16,
     fontWeight: '500',
     color: Colors.text.primary,
+  },
+  cardExpiry: {
+    fontSize: 12,
+    color: Colors.text.secondary,
+    marginTop: 2,
+  },
+  defaultBadge: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginRight: 8,
+  },
+  defaultBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '600',
   },
   radioButton: {
     width: 24,

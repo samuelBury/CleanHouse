@@ -9,6 +9,7 @@ import {
   getRefreshTokenExpiry,
 } from '../config/auth';
 import { asyncHandler, createError } from '../middleware/errorHandler';
+import { generateVerificationToken, sendVerificationEmail, sendWelcomeEmail } from '../services/emailService';
 
 // Inscription
 export const register = asyncHandler(async (req: Request, res: Response) => {
@@ -18,19 +19,47 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
   const existingUser = await prisma.user.findUnique({ where: { email } });
 
   if (existingUser) {
+    // Si l'utilisateur existe mais n'a pas vérifié son email, renvoyer le mail
+    if (!existingUser.emailVerified) {
+      const verificationToken = generateVerificationToken();
+      const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+
+      await prisma.user.update({
+        where: { id: existingUser.id },
+        data: {
+          emailVerificationToken: verificationToken,
+          emailVerificationExpires: verificationExpires,
+        },
+      });
+
+      await sendVerificationEmail(email, existingUser.name, verificationToken);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Un email de vérification a été renvoyé à votre adresse.',
+        requiresVerification: true,
+      });
+    }
     throw createError('Cet email est déjà utilisé', 400);
   }
 
   // Hasher le mot de passe
   const hashedPassword = await bcrypt.hash(password, 12);
 
-  // Créer l'utilisateur
+  // Générer le token de vérification
+  const verificationToken = generateVerificationToken();
+  const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+
+  // Créer l'utilisateur (non vérifié)
   const user = await prisma.user.create({
     data: {
       email,
       password: hashedPassword,
       name,
       phone,
+      emailVerified: false,
+      emailVerificationToken: verificationToken,
+      emailVerificationExpires: verificationExpires,
     },
     select: {
       id: true,
@@ -43,25 +72,15 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
     },
   });
 
-  // Générer les tokens
-  const accessToken = generateAccessToken({ userId: user.id, email: user.email });
-  const refreshToken = generateRefreshToken({ userId: user.id, email: user.email });
-
-  // Sauvegarder le refresh token
-  await prisma.refreshToken.create({
-    data: {
-      userId: user.id,
-      token: refreshToken,
-      expiresAt: getRefreshTokenExpiry(),
-    },
-  });
+  // Envoyer l'email de vérification
+  await sendVerificationEmail(email, name, verificationToken);
 
   res.status(201).json({
     success: true,
+    message: 'Inscription réussie ! Veuillez vérifier votre email pour activer votre compte.',
+    requiresVerification: true,
     data: {
       user,
-      accessToken,
-      refreshToken,
     },
   });
 });
@@ -84,6 +103,11 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
 
   if (!isValidPassword) {
     throw createError('Email ou mot de passe incorrect', 401);
+  }
+
+  // Vérifier si l'email est vérifié
+  if (!user.emailVerified) {
+    throw createError('Veuillez vérifier votre email avant de vous connecter', 403);
   }
 
   // Générer les tokens
@@ -355,5 +379,111 @@ export const checkAuth = asyncHandler(async (req: Request, res: Response) => {
   res.json({
     success: true,
     data: { user },
+  });
+});
+
+// Vérifier l'email
+export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
+  const { token } = req.query;
+
+  if (!token || typeof token !== 'string') {
+    throw createError('Token de vérification manquant', 400);
+  }
+
+  // Trouver l'utilisateur avec ce token
+  const user = await prisma.user.findFirst({
+    where: {
+      emailVerificationToken: token,
+      emailVerificationExpires: {
+        gt: new Date(),
+      },
+    },
+  });
+
+  if (!user) {
+    throw createError('Token invalide ou expiré', 400);
+  }
+
+  // Marquer l'email comme vérifié
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      emailVerified: true,
+      emailVerificationToken: null,
+      emailVerificationExpires: null,
+    },
+  });
+
+  // Envoyer l'email de bienvenue
+  await sendWelcomeEmail(user.email, user.name);
+
+  // Retourner une page HTML de confirmation
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Email vérifié - CleanHouse</title>
+      <style>
+        body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #f5f5f5; }
+        .container { text-align: center; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .success { color: #4cb04f; font-size: 60px; }
+        h1 { color: #333; }
+        p { color: #666; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="success">✓</div>
+        <h1>Email vérifié !</h1>
+        <p>Votre compte CleanHouse est maintenant activé.</p>
+        <p>Vous pouvez fermer cette page et vous connecter dans l'application.</p>
+      </div>
+    </body>
+    </html>
+  `);
+});
+
+// Renvoyer l'email de vérification
+export const resendVerification = asyncHandler(async (req: Request, res: Response) => {
+  const { email } = req.body;
+
+  if (!email) {
+    throw createError('Email requis', 400);
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (!user) {
+    // Ne pas révéler si l'utilisateur existe ou non
+    return res.json({
+      success: true,
+      message: 'Si cet email existe, un lien de vérification a été envoyé.',
+    });
+  }
+
+  if (user.emailVerified) {
+    throw createError('Cet email est déjà vérifié', 400);
+  }
+
+  // Générer un nouveau token
+  const verificationToken = generateVerificationToken();
+  const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      emailVerificationToken: verificationToken,
+      emailVerificationExpires: verificationExpires,
+    },
+  });
+
+  await sendVerificationEmail(email, user.name, verificationToken);
+
+  res.json({
+    success: true,
+    message: 'Un nouveau lien de vérification a été envoyé.',
   });
 });

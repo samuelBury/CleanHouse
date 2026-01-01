@@ -61,7 +61,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
 // Context type
 interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<{ success: boolean; error?: string }>;
-  register: (credentials: RegisterCredentials) => Promise<{ success: boolean; error?: string }>;
+  register: (credentials: RegisterCredentials) => Promise<{ success: boolean; error?: string; requiresVerification?: boolean }>;
   loginWithGoogle: (idToken: string) => Promise<{ success: boolean; error?: string }>;
   loginWithApple: (identityToken: string, fullName?: { givenName?: string; familyName?: string }) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
@@ -108,16 +108,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const register = async (credentials: RegisterCredentials) => {
-    dispatch({ type: 'AUTH_START' });
+    // Ne pas dispatcher AUTH_START pour éviter le remount du navigateur
     const result = await authService.register(credentials);
-    if (result.success && result.data) {
+
+    // Si l'inscription nécessite une vérification email, ne pas connecter
+    if (result.success && result.requiresVerification) {
+      return { success: true, requiresVerification: true };
+    }
+
+    // Sinon, connecter normalement (si l'email est déjà vérifié)
+    if (result.success && result.data?.token) {
       dispatch({
         type: 'AUTH_SUCCESS',
         payload: { user: result.data.user, token: result.data.token },
       });
       return { success: true };
     }
-    dispatch({ type: 'AUTH_FAILURE', payload: result.error || 'Registration failed' });
     return { success: false, error: result.error };
   };
 

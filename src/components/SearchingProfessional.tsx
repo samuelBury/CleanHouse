@@ -1,8 +1,13 @@
 import React, {useEffect, useRef} from 'react';
-import {View, Text, StyleSheet, Animated} from 'react-native';
+import {View, Text, StyleSheet, Animated, Modal} from 'react-native';
 import {Colors} from '../config/theme';
 
-export default function SearchingProfessional() {
+interface SearchingProfessionalProps {
+  visible: boolean;
+}
+
+export default function SearchingProfessional({visible}: SearchingProfessionalProps) {
+  if (!visible) return null;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const pingScale = useRef(new Animated.Value(1)).current;
   const pingOpacity = useRef(new Animated.Value(0.2)).current;

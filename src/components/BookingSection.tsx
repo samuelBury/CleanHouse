@@ -1,22 +1,43 @@
 import React from 'react';
 import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
 import {Colors} from '../config/theme';
+import type {Booking} from '../types';
 
-export default function BookingSection() {
+interface BookingSectionProps {
+  reservations: Booking[];
+}
+
+export default function BookingSection({reservations = []}: BookingSectionProps) {
+  const formatDate = (date: string, time: string, duration: number) => {
+    const d = new Date(date);
+    const day = d.getDate();
+    const months = ['JAN', 'FÉV', 'MAR', 'AVR', 'MAI', 'JUIN', 'JUIL', 'AOÛT', 'SEPT', 'OCT', 'NOV', 'DÉC'];
+    const month = months[d.getMonth()];
+    const [hours, minutes] = time.split(':');
+    const endHour = parseInt(hours) + duration;
+    return `${day} ${month} ${hours} H ${minutes} - ${endHour} H 00`;
+  };
+
   return (
     <View style={styles.container}>
-      {/* Booking Card */}
-      <View style={styles.bookingCard}>
-        <View style={styles.bookingHeader}>
-          <Text style={styles.bookingTitle}>Ménage</Text>
-          <TouchableOpacity style={styles.confirmButton}>
-            <Text style={styles.confirmButtonText}>Confirmer</Text>
-          </TouchableOpacity>
-        </View>
-        <Text style={styles.bookingDate}>17 MAI 20 H 00 - 21 H 00</Text>
-      </View>
+      {/* Booking Cards */}
+      {reservations.length > 0 ? (
+        reservations.slice(0, 2).map((booking) => (
+          <View key={booking.id} style={styles.bookingCard}>
+            <View style={styles.bookingHeader}>
+              <Text style={styles.bookingTitle}>{booking.service}</Text>
+              <TouchableOpacity style={styles.confirmButton}>
+                <Text style={styles.confirmButtonText}>Voir</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.bookingDate}>
+              {formatDate(booking.date, booking.time, booking.duration)}
+            </Text>
+          </View>
+        ))
+      ) : null}
 
-      {/* Employee Section */}
+      {/* Promo Section */}
       <View style={styles.employeeSection}>
         <View style={styles.firstBookingCard}>
           <Text style={styles.firstBookingIcon}>📱</Text>

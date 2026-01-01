@@ -74,6 +74,7 @@ export interface CreateBookingData {
   address: string;
   latitude?: number;
   longitude?: number;
+  paymentIntentId?: string;
 }
 
 // Payment

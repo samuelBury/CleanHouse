@@ -13,7 +13,7 @@ const HistoryScreen: React.FC = () => {
   }, []);
 
   // Convert bookings to the format expected by the component
-  const formattedReservations = bookings.map(booking => ({
+  const formattedReservations = (bookings || []).map(booking => ({
     id: booking.id,
     service: booking.service,
     date: booking.date,

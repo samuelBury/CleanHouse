@@ -3,15 +3,15 @@ import {View, Text, Image, TouchableOpacity, StyleSheet} from 'react-native';
 import {Colors} from '../config/theme';
 
 interface ServicesSectionProps {
-  onServicePress: (service: string) => void;
+  onServiceSelect: (service: string) => void;
 }
 
-export default function ServicesSection({onServicePress}: ServicesSectionProps) {
+export default function ServicesSection({onServiceSelect}: ServicesSectionProps) {
   return (
     <View style={styles.servicesSection}>
       <Text style={styles.sectionTitle}>Nos services</Text>
       <View style={styles.servicesGrid}>
-        <TouchableOpacity style={styles.serviceCard} onPress={() => onServicePress('Ménage')}>
+        <TouchableOpacity style={styles.serviceCard} onPress={() => onServiceSelect('Ménage')}>
           <Image
             source={require('../../assets/images/Image3.jpeg')}
             style={styles.serviceImage}
@@ -25,7 +25,7 @@ export default function ServicesSection({onServicePress}: ServicesSectionProps) 
           </View>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.serviceCard} onPress={() => onServicePress('Repassage')}>
+        <TouchableOpacity style={styles.serviceCard} onPress={() => onServiceSelect('Repassage')}>
           <Image
             source={require('../../assets/images/Image2.jpeg')}
             style={styles.serviceImage}
@@ -40,7 +40,7 @@ export default function ServicesSection({onServicePress}: ServicesSectionProps) 
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={styles.fullServiceCard} onPress={() => onServicePress('Ménage & Repassage')}>
+      <TouchableOpacity style={styles.fullServiceCard} onPress={() => onServiceSelect('Ménage + Repassage')}>
         <Image
           source={{uri: 'https://images.unsplash.com/photo-1585421514738-01798e348b17?w=800'}}
           style={styles.fullServiceImage}
@@ -49,7 +49,7 @@ export default function ServicesSection({onServicePress}: ServicesSectionProps) 
           <Text style={styles.fullServicePrice}>20€/h</Text>
           <View style={styles.fullServiceInfo}>
             <Text style={styles.fullServiceIcon}>✨</Text>
-            <Text style={styles.fullServiceTitle}>Ménage & Repassage</Text>
+            <Text style={styles.fullServiceTitle}>Ménage + Repassage</Text>
           </View>
         </View>
       </TouchableOpacity>

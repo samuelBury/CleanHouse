@@ -28,17 +28,38 @@ export const authService = {
   },
 
   // Register new user
-  async register(credentials: RegisterCredentials): Promise<ApiResponse<AuthResponse>> {
+  async register(credentials: RegisterCredentials): Promise<ApiResponse<AuthResponse> & { requiresVerification?: boolean; message?: string }> {
     try {
       const response = await api.post('/auth/register', credentials);
+
+      // Si requiresVerification est true, l'utilisateur doit vérifier son email
+      if (response.data.requiresVerification) {
+        return {
+          success: true,
+          requiresVerification: true,
+          message: response.data.message,
+          data: response.data.data,
+        };
+      }
+
       const { user, accessToken, refreshToken } = response.data.data;
 
-      // Store tokens and user data
+      // Store tokens and user data (seulement si pas besoin de vérification)
       await storage.setAuthToken(accessToken);
       await storage.setRefreshToken(refreshToken);
       await storage.setUserData(user);
 
       return { success: true, data: { user, token: accessToken, refreshToken } };
+    } catch (error) {
+      return { success: false, error: handleApiError(error) };
+    }
+  },
+
+  // Resend verification email
+  async resendVerification(email: string): Promise<ApiResponse<void>> {
+    try {
+      const response = await api.post('/auth/resend-verification', { email });
+      return { success: true, message: response.data.message };
     } catch (error) {
       return { success: false, error: handleApiError(error) };
     }

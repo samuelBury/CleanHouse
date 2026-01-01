@@ -1,4 +1,5 @@
 import React from 'react';
+import { StyleSheet } from 'react-native';
 import Svg, { Defs, LinearGradient, Stop, G, Path, Circle } from 'react-native-svg';
 
 interface BackgroundSVGProps {
@@ -8,7 +9,7 @@ interface BackgroundSVGProps {
 
 const BackgroundSVG: React.FC<BackgroundSVGProps> = () => {
   return (
-    <Svg width="525" height="982" viewBox="0 0 525 982">
+    <Svg style={styles.background} width="100%" height="100%" viewBox="0 0 525 982" preserveAspectRatio="xMidYMid slice">
       <Defs>
         <LinearGradient id="linear-gradient" x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor="#e8f5ff" />
@@ -31,5 +32,15 @@ const BackgroundSVG: React.FC<BackgroundSVGProps> = () => {
     </Svg>
   );
 };
+
+const styles = StyleSheet.create({
+  background: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+});
 
 export default BackgroundSVG;

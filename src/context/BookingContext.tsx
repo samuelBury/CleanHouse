@@ -79,6 +79,8 @@ interface BookingContextType extends BookingState {
   getBookingsByDate: (date: string) => Booking[];
   getUpcomingBookings: () => Booking[];
   getCompletedBookings: () => Booking[];
+  getPendingBooking: () => Booking | undefined;
+  hasPendingBooking: () => boolean;
 }
 
 // Create context
@@ -165,6 +167,16 @@ export const BookingProvider: React.FC<{ children: ReactNode }> = ({ children })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [state.bookings]);
 
+  // Get pending booking (waiting for professional)
+  const getPendingBooking = useCallback(() => {
+    return state.bookings.find((b) => b.status === 'pending');
+  }, [state.bookings]);
+
+  // Check if there's a pending booking
+  const hasPendingBooking = useCallback(() => {
+    return state.bookings.some((b) => b.status === 'pending');
+  }, [state.bookings]);
+
   return (
     <BookingContext.Provider
       value={{
@@ -178,6 +190,8 @@ export const BookingProvider: React.FC<{ children: ReactNode }> = ({ children })
         getBookingsByDate,
         getUpcomingBookings,
         getCompletedBookings,
+        getPendingBooking,
+        hasPendingBooking,
       }}
     >
       {children}

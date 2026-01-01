@@ -1,4 +1,27 @@
-// Service d'emails (simulation - à intégrer avec SendGrid, Mailgun, etc.)
+// Service d'envoi d'emails avec Nodemailer
+import nodemailer from 'nodemailer';
+
+// Configuration du transporteur SMTP
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: parseInt(process.env.SMTP_PORT || '587'),
+  secure: false, // true pour 465, false pour autres ports
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
+
+// Vérifier la connexion SMTP au démarrage (seulement si configuré)
+if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+  transporter.verify((error) => {
+    if (error) {
+      console.error('Erreur de connexion SMTP:', error.message);
+    } else {
+      console.log('Service email prêt');
+    }
+  });
+}
 
 export interface EmailData {
   to: string;
@@ -7,26 +30,112 @@ export interface EmailData {
   text?: string;
 }
 
-// Simulation d'envoi d'email (à remplacer par un vrai service)
-export const sendEmail = async (data: EmailData): Promise<boolean> => {
-  console.log('=== EMAIL SIMULATION ===');
-  console.log(`To: ${data.to}`);
-  console.log(`Subject: ${data.subject}`);
-  console.log(`Body: ${data.text || data.html}`);
-  console.log('========================');
-
-  // En production, utiliser un service comme SendGrid, Mailgun, etc.
-  // Exemple avec SendGrid:
-  // const sgMail = require('@sendgrid/mail');
-  // sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-  // await sgMail.send(data);
-
-  return true;
+// Générer un token de vérification
+export const generateVerificationToken = (): string => {
+  return Math.random().toString(36).substring(2) + Date.now().toString(36);
 };
 
-// Templates d'emails
+// Fonction d'envoi générique
+export const sendEmail = async (data: EmailData): Promise<boolean> => {
+  // Mode simulation si SMTP non configuré
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.log('=== EMAIL SIMULATION ===');
+    console.log(`To: ${data.to}`);
+    console.log(`Subject: ${data.subject}`);
+    console.log(`Body: ${data.text || 'HTML content'}`);
+    console.log('========================');
+    return true;
+  }
 
-// Email de bienvenue
+  try {
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || '"CleanHouse" <noreply@cleanhouse.com>',
+      ...data,
+    });
+    console.log(`Email envoyé à ${data.to}`);
+    return true;
+  } catch (error) {
+    console.error('Erreur envoi email:', error);
+    return false;
+  }
+};
+
+// Envoyer l'email de vérification
+export const sendVerificationEmail = async (
+  to: string,
+  name: string,
+  token: string
+): Promise<boolean> => {
+  const verificationUrl = `${process.env.APP_URL || 'http://localhost:3000'}/api/auth/verify-email?token=${token}`;
+
+  return sendEmail({
+    to,
+    subject: 'Vérifiez votre adresse email - CleanHouse',
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { text-align: center; padding: 20px 0; }
+          .logo { font-size: 28px; font-weight: bold; color: #4cb04f; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 10px; }
+          .button {
+            display: inline-block;
+            background: #4cb04f;
+            color: white !important;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: bold;
+            margin: 20px 0;
+          }
+          .footer { text-align: center; padding: 20px; color: #888; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <div class="logo">CleanHouse</div>
+          </div>
+          <div class="content">
+            <h2>Bienvenue ${name} !</h2>
+            <p>Merci de vous être inscrit sur CleanHouse, votre service de ménage à domicile.</p>
+            <p>Pour activer votre compte et commencer à réserver vos prestations, veuillez confirmer votre adresse email en cliquant sur le bouton ci-dessous :</p>
+            <p style="text-align: center;">
+              <a href="${verificationUrl}" class="button">Vérifier mon email</a>
+            </p>
+            <p>Ou copiez ce lien dans votre navigateur :</p>
+            <p style="word-break: break-all; color: #666; font-size: 12px;">${verificationUrl}</p>
+            <p><strong>Ce lien expire dans 24 heures.</strong></p>
+            <p>Si vous n'avez pas créé de compte sur CleanHouse, ignorez cet email.</p>
+          </div>
+          <div class="footer">
+            <p>CleanHouse - Services de ménage à Paris</p>
+            <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+    text: `
+Bienvenue ${name} !
+
+Merci de vous être inscrit sur CleanHouse.
+
+Pour activer votre compte, cliquez sur ce lien :
+${verificationUrl}
+
+Ce lien expire dans 24 heures.
+
+Si vous n'avez pas créé de compte, ignorez cet email.
+    `,
+  });
+};
+
+// Email de bienvenue (après vérification)
 export const sendWelcomeEmail = async (
   to: string,
   name: string
@@ -35,13 +144,39 @@ export const sendWelcomeEmail = async (
     to,
     subject: 'Bienvenue chez CleanHouse !',
     html: `
-      <h1>Bienvenue ${name} !</h1>
-      <p>Nous sommes ravis de vous compter parmi nos clients.</p>
-      <p>Avec CleanHouse, réservez facilement vos services de ménage et repassage.</p>
-      <p>À très bientôt !</p>
-      <p>L'équipe CleanHouse</p>
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { text-align: center; padding: 20px 0; }
+          .logo { font-size: 28px; font-weight: bold; color: #4cb04f; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 10px; }
+          .footer { text-align: center; padding: 20px; color: #888; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <div class="logo">CleanHouse</div>
+          </div>
+          <div class="content">
+            <h2>Votre compte est activé !</h2>
+            <p>Bonjour ${name},</p>
+            <p>Votre adresse email a été vérifiée avec succès. Vous pouvez maintenant vous connecter et profiter de nos services.</p>
+            <p>Avec CleanHouse, réservez facilement vos prestations de ménage et repassage à domicile.</p>
+            <p>À bientôt !</p>
+          </div>
+          <div class="footer">
+            <p>CleanHouse - Services de ménage à Paris</p>
+          </div>
+        </div>
+      </body>
+      </html>
     `,
-    text: `Bienvenue ${name} ! Nous sommes ravis de vous compter parmi nos clients.`,
+    text: `Bienvenue ${name} ! Votre compte est activé. Vous pouvez maintenant vous connecter.`,
   });
 };
 
@@ -114,7 +249,7 @@ export const sendPasswordResetEmail = async (
   to: string,
   resetToken: string
 ): Promise<boolean> => {
-  const resetUrl = `https://cleanhouse.app/reset-password?token=${resetToken}`;
+  const resetUrl = `${process.env.APP_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
 
   return sendEmail({
     to,
@@ -132,42 +267,12 @@ export const sendPasswordResetEmail = async (
   });
 };
 
-// Email de facture
-export const sendInvoiceEmail = async (
-  to: string,
-  name: string,
-  invoice: {
-    number: string;
-    date: string;
-    service: string;
-    amount: number;
-  }
-): Promise<boolean> => {
-  return sendEmail({
-    to,
-    subject: `Facture CleanHouse #${invoice.number}`,
-    html: `
-      <h1>Votre facture CleanHouse</h1>
-      <p>Bonjour ${name},</p>
-      <p>Veuillez trouver ci-dessous le détail de votre facture :</p>
-      <table>
-        <tr><td>Numéro :</td><td>${invoice.number}</td></tr>
-        <tr><td>Date :</td><td>${invoice.date}</td></tr>
-        <tr><td>Service :</td><td>${invoice.service}</td></tr>
-        <tr><td>Montant :</td><td>${invoice.amount.toFixed(2)} EUR</td></tr>
-      </table>
-      <p>Merci de votre confiance !</p>
-      <p>L'équipe CleanHouse</p>
-    `,
-    text: `Facture #${invoice.number} - ${invoice.service} - ${invoice.amount.toFixed(2)} EUR`,
-  });
-};
-
 export default {
+  generateVerificationToken,
   sendEmail,
+  sendVerificationEmail,
   sendWelcomeEmail,
   sendBookingConfirmationEmail,
   sendBookingReminderEmail,
   sendPasswordResetEmail,
-  sendInvoiceEmail,
 };

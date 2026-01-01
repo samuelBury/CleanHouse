@@ -2,14 +2,19 @@ import React from 'react';
 import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
 import {Colors} from '../config/theme';
 
-export default function Header() {
+interface HeaderProps {
+  userName: string;
+  onProfilePress: () => void;
+}
+
+export default function Header({userName, onProfilePress}: HeaderProps) {
   return (
     <View style={styles.header}>
       <View>
         <Text style={styles.greetingText}>BONJOUR</Text>
-        <Text style={styles.userName}>Chantal 👋</Text>
+        <Text style={styles.userName}>{userName} 👋</Text>
       </View>
-      <TouchableOpacity style={styles.notificationButton}>
+      <TouchableOpacity style={styles.notificationButton} onPress={onProfilePress}>
         <View style={styles.notificationDot} />
         <Text style={styles.notificationIcon}>🔔</Text>
       </TouchableOpacity>
