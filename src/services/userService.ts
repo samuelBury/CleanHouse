@@ -1,7 +1,7 @@
 // Service utilisateur pour CleanHouse
 import api, { handleApiError } from './api';
 import { storage } from '../utils/storage';
-import type { User, WalletData, Transaction, ApiResponse } from '../types';
+import type { User, Transaction, ApiResponse } from '../types';
 
 export const userService = {
   // Get current user profile
@@ -51,16 +51,6 @@ export const userService = {
     }
   },
 
-  // Get wallet data (balance + transactions)
-  async getWallet(): Promise<ApiResponse<WalletData>> {
-    try {
-      const response = await api.get('/users/wallet');
-      return { success: true, data: response.data.data };
-    } catch (error) {
-      return { success: false, error: handleApiError(error) };
-    }
-  },
-
   // Get transactions history
   async getTransactions(): Promise<ApiResponse<Transaction[]>> {
     try {
@@ -69,19 +59,6 @@ export const userService = {
       return { success: true, data: Array.isArray(transactions) ? transactions : [] };
     } catch (error) {
       return { success: false, error: handleApiError(error), data: [] };
-    }
-  },
-
-  // Add money to wallet
-  async addMoney(amount: number, paymentMethodId: string): Promise<ApiResponse<{ balance: number; transaction: Transaction }>> {
-    try {
-      const response = await api.post('/users/wallet/add', {
-        amount,
-        paymentMethodId,
-      });
-      return { success: true, data: response.data.data };
-    } catch (error) {
-      return { success: false, error: handleApiError(error) };
     }
   },
 

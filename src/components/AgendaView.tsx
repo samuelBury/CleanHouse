@@ -1,5 +1,6 @@
 import React, {useState} from 'react';
 import {View, Text, TouchableOpacity, StyleSheet, ScrollView} from 'react-native';
+import {FontAwesome5} from '@expo/vector-icons';
 import {Colors} from '../config/theme';
 
 export interface Reservation {
@@ -108,9 +109,9 @@ export default function AgendaScreen({reservations}: AgendaScreenProps) {
 
   const getServiceIcon = (service: string) => {
     switch (service) {
-      case 'Ménage': return '🏠';
-      case 'Repassage': return '👔';
-      default: return '✨';
+      case 'Ménage': return 'home';
+      case 'Repassage': return 'tshirt';
+      default: return 'magic';
     }
   };
 
@@ -119,7 +120,7 @@ export default function AgendaScreen({reservations}: AgendaScreenProps) {
       case 'confirmed':
         return {text: 'Confirmée', color: Colors.primary, bg: Colors.primary};
       case 'completed':
-        return {text: 'Terminée', color: Colors.status.success, bg: '#E8F5E9'};
+        return {text: 'Terminée', color: Colors.status.success, bg: Colors.primaryBackground};
       case 'cancelled':
         return {text: 'Annulée', color: Colors.status.error, bg: '#FFEBEE'};
       default:
@@ -154,11 +155,11 @@ export default function AgendaScreen({reservations}: AgendaScreenProps) {
         {/* Month Navigation */}
         <View style={styles.monthNav}>
           <TouchableOpacity onPress={previousMonth} style={styles.navButton}>
-            <Text style={styles.navButtonText}>‹</Text>
+            <FontAwesome5 name="chevron-left" size={16} color={Colors.text.inverse} />
           </TouchableOpacity>
           <Text style={styles.monthTitle}>{MONTHS[month]} {year}</Text>
           <TouchableOpacity onPress={nextMonth} style={styles.navButton}>
-            <Text style={styles.navButtonText}>›</Text>
+            <FontAwesome5 name="chevron-right" size={16} color={Colors.text.inverse} />
           </TouchableOpacity>
         </View>
 
@@ -185,7 +186,7 @@ export default function AgendaScreen({reservations}: AgendaScreenProps) {
 
         {selectedReservations.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>📅</Text>
+            <FontAwesome5 name="calendar-alt" size={48} color={Colors.text.tertiary} style={styles.emptyIcon} />
             <Text style={styles.emptyText}>Aucune réservation ce jour</Text>
           </View>
         ) : (
@@ -196,7 +197,7 @@ export default function AgendaScreen({reservations}: AgendaScreenProps) {
                 <View style={styles.reservationHeader}>
                   <View style={styles.serviceInfo}>
                     <View style={styles.serviceIcon}>
-                      <Text style={styles.serviceIconText}>{getServiceIcon(reservation.service)}</Text>
+                      <FontAwesome5 name={getServiceIcon(reservation.service)} size={20} color={Colors.text.inverse} solid />
                     </View>
                     <View>
                       <Text style={styles.serviceName}>{reservation.service}</Text>
@@ -212,11 +213,11 @@ export default function AgendaScreen({reservations}: AgendaScreenProps) {
 
                 <View style={styles.reservationDetails}>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailIcon}>📍</Text>
+                    <FontAwesome5 name="map-marker-alt" size={14} color={Colors.text.secondary} style={styles.detailIcon} />
                     <Text style={styles.detailText}>{reservation.address}</Text>
                   </View>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailIcon}>💰</Text>
+                    <FontAwesome5 name="euro-sign" size={14} color={Colors.primary} style={styles.detailIcon} />
                     <Text style={styles.detailPrice}>{reservation.price}€</Text>
                   </View>
                 </View>
@@ -245,7 +246,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: Colors.text.inverse,
+    color: Colors.secondary,
   },
   headerSubtitle: {
     fontSize: 14,

@@ -7,11 +7,13 @@ import {
   ScrollView,
   Modal,
 } from 'react-native';
+import {FontAwesome5} from '@expo/vector-icons';
 import {Reservation} from './AgendaScreen';
 import {Colors} from '../config/theme';
 
 interface HistoryScreenProps {
   reservations: Reservation[];
+  onBookingPress?: (reservation: Reservation) => void;
 }
 
 type SortOrder = 'newest' | 'oldest';
@@ -22,15 +24,22 @@ const MONTHS = [
   'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
 ];
 
-export default function HistoryScreen({reservations}: HistoryScreenProps) {
+export default function HistoryScreen({reservations, onBookingPress}: HistoryScreenProps) {
   const [sortOrder, setSortOrder] = useState<SortOrder>('newest');
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
   const [filterMonth, setFilterMonth] = useState<number | null>(null);
   const [filterYear, setFilterYear] = useState<number | null>(null);
   const [showFilterModal, setShowFilterModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 5;
 
-  // Parser une date DD/MM/YYYY en objet Date
+  // Parser une date (ISO ou DD/MM/YYYY) en objet Date
   const parseDate = (dateStr: string): Date => {
+    // Si c'est une date ISO
+    if (dateStr.includes('T') || dateStr.includes('-')) {
+      return new Date(dateStr);
+    }
+    // Sinon DD/MM/YYYY
     const [day, month, year] = dateStr.split('/').map(Number);
     return new Date(year, month - 1, day);
   };
@@ -82,11 +91,23 @@ export default function HistoryScreen({reservations}: HistoryScreenProps) {
     return filtered;
   }, [reservations, sortOrder, filterStatus, filterMonth, filterYear]);
 
-  // Grouper par mois/année
+  // Reset page when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [filterStatus, filterMonth, filterYear, sortOrder]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredReservations.length / ITEMS_PER_PAGE);
+  const paginatedReservations = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredReservations.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredReservations, currentPage]);
+
+  // Grouper par mois/année (utilise les réservations paginées)
   const groupedReservations = useMemo(() => {
     const groups: {[key: string]: Reservation[]} = {};
 
-    filteredReservations.forEach(reservation => {
+    paginatedReservations.forEach(reservation => {
       const date = parseDate(reservation.date);
       const key = `${MONTHS[date.getMonth()]} ${date.getFullYear()}`;
 
@@ -97,22 +118,22 @@ export default function HistoryScreen({reservations}: HistoryScreenProps) {
     });
 
     return groups;
-  }, [filteredReservations]);
+  }, [paginatedReservations]);
 
   const getServiceIcon = (service: string) => {
     switch (service) {
-      case 'Ménage': return '🏠';
-      case 'Repassage': return '👔';
-      default: return '✨';
+      case 'Ménage': return 'home';
+      case 'Repassage': return 'tshirt';
+      default: return 'magic';
     }
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'confirmed':
-        return {text: 'Confirmée', color: Colors.primary, bg: Colors.primary};
+        return {text: 'Confirmée', color: Colors.text.inverse, bg: Colors.primary};
       case 'completed':
-        return {text: 'Terminée', color: Colors.status.success, bg: '#E8F5E9'};
+        return {text: 'Terminée', color: Colors.status.success, bg: Colors.primaryBackground};
       case 'cancelled':
         return {text: 'Annulée', color: Colors.status.error, bg: '#FFEBEE'};
       default:
@@ -121,8 +142,11 @@ export default function HistoryScreen({reservations}: HistoryScreenProps) {
   };
 
   const formatDate = (dateStr: string) => {
-    const [day, month, year] = dateStr.split('/');
-    return `${parseInt(day)} ${MONTHS[parseInt(month) - 1].slice(0, 3)} ${year}`;
+    const date = parseDate(dateStr);
+    const day = date.getDate();
+    const month = MONTHS[date.getMonth()].slice(0, 3);
+    const year = date.getFullYear();
+    return `${day} ${month} ${year}`;
   };
 
   const calculateEndTime = (startTime: string, duration: number) => {
@@ -160,21 +184,7 @@ export default function HistoryScreen({reservations}: HistoryScreenProps) {
         <Text style={styles.headerSubtitle}>{stats.total} prestation{stats.total > 1 ? 's' : ''}</Text>
       </View>
 
-      {/* Stats Cards */}
-      <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{stats.completed}</Text>
-          <Text style={styles.statLabel}>Terminées</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{stats.totalHours}h</Text>
-          <Text style={styles.statLabel}>Total heures</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{stats.totalSpent}€</Text>
-          <Text style={styles.statLabel}>Dépensé</Text>
-        </View>
-      </View>
+      <View style={{height: 16}} />
 
       {/* Filtres et Tri */}
       <View style={styles.controlsContainer}>
@@ -201,7 +211,12 @@ export default function HistoryScreen({reservations}: HistoryScreenProps) {
           style={[styles.filterButton, hasActiveFilters && styles.filterButtonActive]}
           onPress={() => setShowFilterModal(true)}
         >
-          <Text style={styles.filterIcon}>🔽</Text>
+          <FontAwesome5
+            name="filter"
+            size={12}
+            color={hasActiveFilters ? Colors.text.inverse : Colors.text.secondary}
+            style={styles.filterIcon}
+          />
           <Text style={[styles.filterButtonText, hasActiveFilters && styles.filterButtonTextActive]}>
             Filtrer
           </Text>
@@ -223,24 +238,24 @@ export default function HistoryScreen({reservations}: HistoryScreenProps) {
               <Text style={styles.activeFilterText}>
                 {filterStatus === 'confirmed' ? 'Confirmée' : filterStatus === 'completed' ? 'Terminée' : 'Annulée'}
               </Text>
-              <TouchableOpacity onPress={() => setFilterStatus('all')}>
-                <Text style={styles.activeFilterRemove}>✕</Text>
+              <TouchableOpacity onPress={() => setFilterStatus('all')} style={styles.activeFilterRemoveBtn}>
+                <FontAwesome5 name="times" size={10} color={Colors.text.inverse} />
               </TouchableOpacity>
             </View>
           )}
           {filterMonth !== null && (
             <View style={styles.activeFilterChip}>
               <Text style={styles.activeFilterText}>{MONTHS[filterMonth]}</Text>
-              <TouchableOpacity onPress={() => setFilterMonth(null)}>
-                <Text style={styles.activeFilterRemove}>✕</Text>
+              <TouchableOpacity onPress={() => setFilterMonth(null)} style={styles.activeFilterRemoveBtn}>
+                <FontAwesome5 name="times" size={10} color={Colors.text.inverse} />
               </TouchableOpacity>
             </View>
           )}
           {filterYear !== null && (
             <View style={styles.activeFilterChip}>
               <Text style={styles.activeFilterText}>{filterYear}</Text>
-              <TouchableOpacity onPress={() => setFilterYear(null)}>
-                <Text style={styles.activeFilterRemove}>✕</Text>
+              <TouchableOpacity onPress={() => setFilterYear(null)} style={styles.activeFilterRemoveBtn}>
+                <FontAwesome5 name="times" size={10} color={Colors.text.inverse} />
               </TouchableOpacity>
             </View>
           )}
@@ -254,7 +269,7 @@ export default function HistoryScreen({reservations}: HistoryScreenProps) {
       <View style={styles.listContainer}>
         {Object.keys(groupedReservations).length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>📋</Text>
+            <FontAwesome5 name="clipboard-list" size={48} color={Colors.text.tertiary} style={styles.emptyIcon} />
             <Text style={styles.emptyText}>Aucune prestation trouvée</Text>
             {hasActiveFilters && (
               <TouchableOpacity style={styles.emptyButton} onPress={clearFilters}>
@@ -269,10 +284,15 @@ export default function HistoryScreen({reservations}: HistoryScreenProps) {
               {items.map((reservation) => {
                 const statusBadge = getStatusBadge(reservation.status);
                 return (
-                  <View key={reservation.id} style={styles.reservationCard}>
+                  <TouchableOpacity
+                    key={reservation.id}
+                    style={styles.reservationCard}
+                    onPress={() => onBookingPress?.(reservation)}
+                    activeOpacity={0.7}
+                  >
                     <View style={styles.reservationLeft}>
                       <View style={styles.serviceIcon}>
-                        <Text style={styles.serviceIconText}>{getServiceIcon(reservation.service)}</Text>
+                        <FontAwesome5 name={getServiceIcon(reservation.service)} size={18} color={Colors.text.inverse} solid />
                       </View>
                     </View>
                     <View style={styles.reservationCenter}>
@@ -290,11 +310,61 @@ export default function HistoryScreen({reservations}: HistoryScreenProps) {
                       </View>
                       <Text style={styles.priceText}>{reservation.price}€</Text>
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 );
               })}
             </View>
           ))
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <View style={styles.paginationContainer}>
+            <TouchableOpacity
+              style={[styles.paginationButton, currentPage === 1 && styles.paginationButtonDisabled]}
+              onPress={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              <FontAwesome5
+                name="chevron-left"
+                size={14}
+                color={currentPage === 1 ? Colors.text.tertiary : Colors.primary}
+              />
+            </TouchableOpacity>
+
+            <View style={styles.paginationNumbers}>
+              {Array.from({length: totalPages}, (_, i) => i + 1).map(page => (
+                <TouchableOpacity
+                  key={page}
+                  style={[styles.paginationNumber, currentPage === page && styles.paginationNumberActive]}
+                  onPress={() => setCurrentPage(page)}
+                >
+                  <Text style={[styles.paginationNumberText, currentPage === page && styles.paginationNumberTextActive]}>
+                    {page}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TouchableOpacity
+              style={[styles.paginationButton, currentPage === totalPages && styles.paginationButtonDisabled]}
+              onPress={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+            >
+              <FontAwesome5
+                name="chevron-right"
+                size={14}
+                color={currentPage === totalPages ? Colors.text.tertiary : Colors.primary}
+              />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Info pagination */}
+        {filteredReservations.length > 0 && (
+          <Text style={styles.paginationInfo}>
+            {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, filteredReservations.length)} sur {filteredReservations.length}
+          </Text>
         )}
       </View>
 
@@ -312,7 +382,7 @@ export default function HistoryScreen({reservations}: HistoryScreenProps) {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Filtrer</Text>
               <TouchableOpacity onPress={() => setShowFilterModal(false)}>
-                <Text style={styles.modalClose}>✕</Text>
+                <FontAwesome5 name="times" size={20} color={Colors.text.tertiary} />
               </TouchableOpacity>
             </View>
 
@@ -443,7 +513,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: Colors.text.inverse,
+    color: Colors.secondary,
   },
   headerSubtitle: {
     fontSize: 14,
@@ -517,7 +587,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
   },
   filterIcon: {
-    fontSize: 12,
     marginRight: 6,
   },
   filterButtonText: {
@@ -526,10 +595,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   filterButtonTextActive: {
-    color: Colors.primary,
+    color: Colors.text.inverse,
   },
   filterBadge: {
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.text.inverse,
     borderRadius: 10,
     minWidth: 18,
     height: 18,
@@ -539,7 +608,7 @@ const styles = StyleSheet.create({
   },
   filterBadgeText: {
     fontSize: 10,
-    color: Colors.text.inverse,
+    color: Colors.primary,
     fontWeight: '600',
   },
   activeFiltersContainer: {
@@ -560,12 +629,10 @@ const styles = StyleSheet.create({
   },
   activeFilterText: {
     fontSize: 12,
-    color: Colors.primary,
+    color: Colors.text.inverse,
     fontWeight: '500',
   },
-  activeFilterRemove: {
-    fontSize: 12,
-    color: Colors.primary,
+  activeFilterRemoveBtn: {
     marginLeft: 6,
   },
   clearFiltersText: {
@@ -605,9 +672,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  serviceIconText: {
-    fontSize: 20,
   },
   reservationCenter: {
     flex: 1,
@@ -654,7 +718,6 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   emptyIcon: {
-    fontSize: 48,
     marginBottom: 12,
   },
   emptyText: {
@@ -675,6 +738,61 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 100,
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+    gap: 12,
+  },
+  paginationButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.background.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  paginationButtonDisabled: {
+    backgroundColor: Colors.background.secondary,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  paginationNumbers: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  paginationNumber: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.background.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  paginationNumberActive: {
+    backgroundColor: Colors.primary,
+  },
+  paginationNumberText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.text.secondary,
+  },
+  paginationNumberTextActive: {
+    color: Colors.text.inverse,
+    fontWeight: '600',
+  },
+  paginationInfo: {
+    textAlign: 'center',
+    fontSize: 12,
+    color: Colors.text.tertiary,
+    marginTop: 12,
   },
   modalOverlay: {
     flex: 1,
@@ -702,10 +820,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: Colors.text.primary,
-  },
-  modalClose: {
-    fontSize: 20,
-    color: Colors.text.tertiary,
   },
   modalBody: {
     padding: 20,

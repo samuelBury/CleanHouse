@@ -10,33 +10,37 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Header from '../components/Header';
+import BackgroundSVG from '../components/BackgroundSVG';
 import HeroCard from '../components/HeroCard';
+import UpcomingBookingsCard from '../components/UpcomingBookingsCard';
 import ServicesSection from '../components/ServicesSection';
-import BookingSection from '../components/BookingSection';
-import BookingModal from '../components/BookingModal';
+import BookingModal, { BookingData } from '../components/BookingModal';
 import PaymentModal from '../components/PaymentModal';
 import ConfirmationModal from '../components/ConfirmationModal';
 import SearchingProfessional from '../components/SearchingProfessional';
-import ProfileDrawer from '../components/ProfileDrawer';
-import BackgroundSVG from '../components/BackgroundSVG';
+import BookingDetailsModal from '../components/BookingDetailsModal';
+import NotificationsModal, { Notification } from '../components/NotificationsModal';
 
 import { useAuth } from '../context/AuthContext';
 import { useBooking } from '../context/BookingContext';
 import { useNotifications } from '../hooks/useNotifications';
 import { Colors } from '../config/theme';
-import type { ServiceType } from '../types';
+import type { ServiceType, Booking } from '../types';
 
 const HomeScreen: React.FC = () => {
-  const { user, logout } = useAuth();
-  const { bookings, fetchBookings, createBooking, currentBooking, setCurrentBooking, clearCurrentBooking, hasPendingBooking, getPendingBooking } = useBooking();
+  const { user } = useAuth();
+  const { bookings, fetchBookings, createBooking, cancelBooking, clearCurrentBooking, hasPendingBooking } = useBooking();
   const { notification } = useNotifications();
 
   // UI State
   const [refreshing, setRefreshing] = useState(false);
-  const [showProfileDrawer, setShowProfileDrawer] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showBookingDetails, setShowBookingDetails] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   // Afficher la recherche si une réservation est en attente
   const showSearching = hasPendingBooking();
@@ -53,18 +57,39 @@ const HomeScreen: React.FC = () => {
     fetchBookings();
   }, []);
 
-  // Écouter les notifications pour détecter quand un pro accepte
+  // Écouter les notifications pour rafraîchir les données
   useEffect(() => {
     if (notification) {
       const notifType = notification.request.content.data?.type;
-      if (notifType === 'booking_confirmed' || notifType === 'professional_assigned') {
-        // Rafraîchir les réservations → statut passera à 'confirmed'
+      if (notifType === 'booking_confirmed' || notifType === 'professional_assigned' || notifType === 'booking_updated') {
+        // Rafraîchir les réservations
         fetchBookings();
-        // Afficher la confirmation
-        setShowConfirmation(true);
       }
     }
   }, [notification]);
+
+  // Ajouter une notification
+  const addNotification = (type: Notification['type'], title: string, message: string) => {
+    const newNotif: Notification = {
+      id: Date.now().toString(),
+      type,
+      title,
+      message,
+      date: new Date(),
+      read: false,
+    };
+    setNotifications(prev => [newNotif, ...prev]);
+  };
+
+  // Marquer une notification comme lue
+  const markNotificationAsRead = (id: string) => {
+    setNotifications(prev =>
+      prev.map(n => (n.id === id ? { ...n, read: true } : n))
+    );
+  };
+
+  // Vérifier s'il y a des notifications non lues
+  const hasUnreadNotifications = notifications.some(n => !n.read);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -77,7 +102,14 @@ const HomeScreen: React.FC = () => {
     setShowBookingModal(true);
   };
 
-  const handleBookingConfirm = () => {
+  const handleBookingConfirm = (data: BookingData) => {
+    // Stocker les données de réservation
+    setBookingDate(data.date);
+    setBookingTime(data.time);
+    setBookingDuration(data.duration);
+    setBookingAddress(data.address);
+    setIsIndeterminate(data.isIndeterminate);
+
     setShowBookingModal(false);
     setShowPaymentModal(true);
   };
@@ -85,18 +117,26 @@ const HomeScreen: React.FC = () => {
   const handlePaymentConfirm = async (paymentIntentId: string) => {
     setShowPaymentModal(false);
 
-    // Paiement réussi ! Créer la réservation avec le paymentIntentId
     if (selectedService) {
-      await createBooking({
-        service: selectedService,
-        date: bookingDate,
-        time: bookingTime,
-        duration: bookingDuration,
-        address: bookingAddress,
-        paymentIntentId, // Associer le paiement à la réservation
-      });
-      // SearchingProfessional s'affichera car hasPendingBooking() sera true
-      // La confirmation s'affichera quand le pro acceptera (via notification)
+      try {
+        await createBooking({
+          service: selectedService,
+          date: bookingDate,
+          time: bookingTime,
+          duration: bookingDuration,
+          address: bookingAddress,
+          paymentIntentId,
+        });
+        await fetchBookings();
+        addNotification(
+          'booking_created',
+          'Réservation confirmée',
+          `Votre prestation ${selectedService} du ${bookingDate} à ${bookingTime} a été réservée.`
+        );
+        setShowConfirmation(true);
+      } catch (error) {
+        // Erreur lors de la création
+      }
     }
   };
 
@@ -125,6 +165,20 @@ const HomeScreen: React.FC = () => {
     }
   };
 
+  // Ouvrir les détails d'une réservation
+  const handleBookingPress = (booking: Booking) => {
+    setSelectedBooking(booking);
+    setTimeout(() => setShowBookingDetails(true), 50);
+  };
+
+  // Annuler une réservation
+  const handleCancelBooking = async (bookingId: string) => {
+    const result = await cancelBooking(bookingId);
+    if (result.success) {
+      fetchBookings();
+    }
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.background.primary} translucent={false} />
@@ -133,7 +187,9 @@ const HomeScreen: React.FC = () => {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <Header
           userName={user?.name || 'Utilisateur'}
-          onProfilePress={() => setShowProfileDrawer(true)}
+          onProfilePress={() => {}}
+          onNotificationPress={() => setShowNotifications(true)}
+          hasUnreadNotifications={hasUnreadNotifications}
         />
 
         <ScrollView
@@ -145,7 +201,10 @@ const HomeScreen: React.FC = () => {
         >
           <HeroCard />
           <ServicesSection onServiceSelect={handleServiceSelect} />
-          <BookingSection reservations={bookings || []} />
+          <UpcomingBookingsCard
+            bookings={bookings || []}
+            onBookingPress={handleBookingPress}
+          />
           <View style={styles.bottomPadding} />
         </ScrollView>
       </SafeAreaView>
@@ -178,19 +237,26 @@ const HomeScreen: React.FC = () => {
         date={bookingDate}
         time={bookingTime}
         duration={bookingDuration}
-        price={getServicePrice() * bookingDuration}
+        payment={`${getServicePrice() * (bookingDuration || 1)}€`}
+        isIndeterminate={isIndeterminate}
       />
 
-      <ProfileDrawer
-        visible={showProfileDrawer}
-        onClose={() => setShowProfileDrawer(false)}
-        user={user}
-        onLogout={logout}
-        stats={{
-          totalReservations: (bookings || []).length,
-          hoursBooked: (bookings || []).reduce((acc, b) => acc + b.duration, 0),
-          totalSpent: (bookings || []).reduce((acc, b) => acc + b.price, 0),
+      
+      <BookingDetailsModal
+        visible={showBookingDetails}
+        booking={selectedBooking}
+        onClose={() => {
+          setShowBookingDetails(false);
+          setSelectedBooking(null);
         }}
+        onCancel={handleCancelBooking}
+      />
+
+      <NotificationsModal
+        visible={showNotifications}
+        onClose={() => setShowNotifications(false)}
+        notifications={notifications}
+        onMarkAsRead={markNotificationAsRead}
       />
     </View>
   );

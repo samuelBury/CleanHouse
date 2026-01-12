@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -11,19 +11,22 @@ import {
   TouchableWithoutFeedback,
   KeyboardAvoidingView,
   Platform,
+  Switch,
+  TextInput,
 } from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {CardField, useStripe, CardFieldInput} from '@stripe/stripe-react-native';
+import {FontAwesome5} from '@expo/vector-icons';
 import {Colors} from '../config/theme';
 
 interface CardInputModalProps {
   visible: boolean;
   onClose: () => void;
-  onSuccess: (paymentIntentId: string) => void;
+  onSuccess: (paymentIntentId: string, shouldSaveCard: boolean) => void;
   onError?: (error: string) => void;
   amount: string;
   clientSecret: string;
   isIndeterminate?: boolean;
-  saveCard?: boolean;
 }
 
 export default function CardInputModal({
@@ -34,13 +37,33 @@ export default function CardInputModal({
   amount,
   clientSecret,
   isIndeterminate = false,
-  saveCard = false,
 }: CardInputModalProps) {
   const {confirmPayment} = useStripe();
+  const insets = useSafeAreaInsets();
   const [isLoading, setIsLoading] = useState(false);
   const [cardComplete, setCardComplete] = useState(false);
+  const [shouldSaveCard, setShouldSaveCard] = useState(false);
+  const [cardholderName, setCardholderName] = useState('');
+
+  // Réinitialiser le formulaire quand la modal s'ouvre
+  useEffect(() => {
+    if (visible) {
+      setCardholderName('');
+      setCardComplete(false);
+      setShouldSaveCard(false);
+    }
+  }, [visible]);
+
+  console.log('=== CardInputModal render ===');
+  console.log('visible:', visible);
+  console.log('clientSecret:', clientSecret ? 'present' : 'missing');
 
   const handleSubmit = async () => {
+    if (!cardholderName.trim()) {
+      Alert.alert('Erreur', 'Veuillez entrer le nom du titulaire');
+      return;
+    }
+
     if (!cardComplete) {
       Alert.alert('Erreur', 'Veuillez remplir tous les champs de la carte');
       return;
@@ -58,7 +81,9 @@ export default function CardInputModal({
       const {error, paymentIntent} = await confirmPayment(clientSecret, {
         paymentMethodType: 'Card',
         paymentMethodData: {
-          billingDetails: {},
+          billingDetails: {
+            name: cardholderName.trim(),
+          },
         },
       });
 
@@ -69,7 +94,7 @@ export default function CardInputModal({
         onError?.(errorMessage);
       } else if (paymentIntent) {
         console.log('Payment successful:', paymentIntent.id);
-        onSuccess(paymentIntent.id);
+        onSuccess(paymentIntent.id, shouldSaveCard);
       }
     } catch (err) {
       console.log('Payment exception:', err);
@@ -92,55 +117,54 @@ export default function CardInputModal({
       visible={visible}
       onRequestClose={onClose}
     >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={styles.modalOverlay}>
-          <TouchableOpacity
-            style={styles.modalBackdrop}
-            activeOpacity={1}
-            onPress={() => {
-              Keyboard.dismiss();
-              if (!isLoading) onClose();
-            }}
-          />
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.keyboardAvoid}
-          >
-            <View style={styles.modalContent}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{flex: 1}}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.modalOverlay}>
+            <TouchableOpacity
+              style={styles.modalBackdrop}
+              activeOpacity={1}
+              onPress={() => {
+                Keyboard.dismiss();
+                if (!isLoading) onClose();
+              }}
+            />
+            <View style={[styles.modalContent, {paddingBottom: insets.bottom + 20}]}>
               {/* Modal Header */}
               <View style={styles.modalHeader}>
                 <View style={styles.modalHeaderIcon}>
-                  <Text style={styles.modalIconText}>💳</Text>
+                  <FontAwesome5 name="credit-card" size={20} color="#fff" />
                 </View>
                 <View style={styles.modalHeaderTitleContainer}>
                   <Text style={styles.modalHeaderTitle}>Carte bancaire</Text>
-                  <Text style={styles.modalHeaderSubtitle}>
-                    {isIndeterminate
-                      ? `Pré-autorisation de ${amount}`
-                      : `Montant: ${amount}`}
-                  </Text>
+                  <Text style={styles.modalHeaderSubtitle}>Montant: {amount}</Text>
                 </View>
                 <TouchableOpacity
                   style={styles.modalCloseButton}
                   onPress={onClose}
                   disabled={isLoading}
                 >
-                  <Text style={styles.modalCloseText}>✕</Text>
+                  <FontAwesome5 name="times" size={18} color={Colors.text.inverse} />
                 </TouchableOpacity>
               </View>
 
               {/* Card Form */}
               <View style={styles.formContainer}>
-                {/* Info pour durée indéterminée */}
-                {isIndeterminate && (
-                  <View style={styles.infoBox}>
-                    <Text style={styles.infoIcon}>ℹ️</Text>
-                    <Text style={styles.infoText}>
-                      Une pré-autorisation sera effectuée. Le montant final sera
-                      débité à la fin de la prestation.
-                    </Text>
-                  </View>
-                )}
+                {/* Nom du titulaire */}
+                <View style={styles.formGroup}>
+                  <Text style={styles.formLabel}>Nom du titulaire</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Jean Dupont"
+                    placeholderTextColor="#999"
+                    value={cardholderName}
+                    onChangeText={setCardholderName}
+                    autoCapitalize="words"
+                    autoCorrect={false}
+                  />
+                </View>
 
                 {/* Stripe CardField */}
                 <View style={styles.formGroup}>
@@ -156,9 +180,25 @@ export default function CardInputModal({
                   />
                 </View>
 
+                {/* Option enregistrer la carte */}
+                <View style={styles.saveCardContainer}>
+                  <View style={styles.saveCardTextContainer}>
+                    <Text style={styles.saveCardLabel}>Enregistrer cette carte</Text>
+                    <Text style={styles.saveCardDescription}>
+                      Pour vos prochains paiements
+                    </Text>
+                  </View>
+                  <Switch
+                    value={shouldSaveCard}
+                    onValueChange={setShouldSaveCard}
+                    trackColor={{false: '#ddd', true: Colors.primary}}
+                    thumbColor={shouldSaveCard ? '#fff' : '#f4f3f4'}
+                  />
+                </View>
+
                 {/* Sécurité */}
                 <View style={styles.securityInfo}>
-                  <Text style={styles.securityIcon}>🔒</Text>
+                  <FontAwesome5 name="lock" size={14} color={Colors.text.secondary} style={styles.securityIcon} />
                   <Text style={styles.securityText}>
                     Paiement sécurisé par Stripe
                   </Text>
@@ -168,24 +208,22 @@ export default function CardInputModal({
                 <TouchableOpacity
                   style={[
                     styles.confirmButton,
-                    (!cardComplete || isLoading) && styles.confirmButtonDisabled,
+                    (!cardComplete || !cardholderName.trim() || isLoading) && styles.confirmButtonDisabled,
                   ]}
                   onPress={handleSubmit}
-                  disabled={!cardComplete || isLoading}
+                  disabled={!cardComplete || !cardholderName.trim() || isLoading}
                 >
                   {isLoading ? (
                     <ActivityIndicator color="#fff" />
                   ) : (
-                    <Text style={styles.confirmButtonText}>
-                      {isIndeterminate ? 'Autoriser le paiement' : `Payer ${amount}`}
-                    </Text>
+                    <Text style={styles.confirmButtonText}>Payer {amount}</Text>
                   )}
                 </TouchableOpacity>
               </View>
             </View>
-          </KeyboardAvoidingView>
-        </View>
-      </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -206,7 +244,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background.primary,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    paddingBottom: 20,
     maxHeight: '90%',
   },
   modalHeader: {
@@ -215,7 +252,7 @@ const styles = StyleSheet.create({
     padding: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.secondary,
   },
   modalHeaderIcon: {
     width: 40,
@@ -227,7 +264,6 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   modalIconText: {
-    fontSize: 20,
   },
   modalHeaderTitleContainer: {
     flex: 1,
@@ -251,11 +287,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modalCloseText: {
-    fontSize: 18,
     color: Colors.text.inverse,
   },
   formContainer: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
   infoBox: {
     flexDirection: 'row',
@@ -284,6 +320,13 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
     marginBottom: 8,
   },
+  textInput: {
+    backgroundColor: Colors.background.secondary,
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: Colors.text.primary,
+  },
   cardField: {
     width: '100%',
     height: 50,
@@ -296,6 +339,28 @@ const styles = StyleSheet.create({
     fontSize: 16,
     placeholderColor: '#999',
   },
+  saveCardContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.background.secondary,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  saveCardTextContainer: {
+    flex: 1,
+  },
+  saveCardLabel: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: Colors.text.primary,
+  },
+  saveCardDescription: {
+    fontSize: 12,
+    color: Colors.text.secondary,
+    marginTop: 2,
+  },
   securityInfo: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -304,7 +369,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   securityIcon: {
-    fontSize: 14,
     marginRight: 6,
   },
   securityText: {

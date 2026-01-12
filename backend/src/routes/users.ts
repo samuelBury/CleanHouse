@@ -4,8 +4,6 @@ import {
   getProfile,
   updateProfile,
   changePassword,
-  getWallet,
-  addFunds,
   getStats,
   deleteAccount,
 } from '../controllers/userController';
@@ -24,7 +22,7 @@ router.put('/me', updateProfile);
 
 // Mot de passe
 router.put(
-  '/password',
+  '/me/password',
   validate([
     body('currentPassword').notEmpty().withMessage('Mot de passe actuel requis'),
     body('newPassword')
@@ -36,18 +34,6 @@ router.put(
       .withMessage('Le nouveau mot de passe doit contenir au moins un chiffre'),
   ]),
   changePassword
-);
-
-// Portefeuille
-router.get('/wallet', validate(paginationValidation), getWallet);
-router.post(
-  '/wallet/add-funds',
-  validate([
-    body('amount')
-      .isFloat({ min: 1 })
-      .withMessage('Montant minimum: 1 EUR'),
-  ]),
-  addFunds
 );
 
 // Statistiques

@@ -1,8 +1,9 @@
 // Constants de configuration pour CleanHouse
+import {Colors} from './theme';
 
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL: __DEV__ ? 'http://192.168.1.179:3000/api' : 'https://api.cleanhouse.com/api',
+  BASE_URL: __DEV__ ? 'http://192.168.1.193:3000/api' : 'https://api.cleanhouse.com/api',
   TIMEOUT: 10000,
 };
 
@@ -12,21 +13,21 @@ export const SERVICES = [
     id: 'menage',
     name: 'Ménage' as const,
     price: 15,
-    icon: '🏠',
+    icon: 'home',
     description: 'Nettoyage complet de votre intérieur',
   },
   {
     id: 'repassage',
     name: 'Repassage' as const,
     price: 10,
-    icon: '👔',
+    icon: 'tshirt',
     description: 'Service de repassage professionnel',
   },
   {
     id: 'both',
     name: 'Ménage + Repassage' as const,
     price: 20,
-    icon: '✨',
+    icon: 'magic',
     description: 'Ménage complet + repassage',
   },
 ];
@@ -45,11 +46,11 @@ export const BOOKING_STATUS = {
 
 // Messages de statut
 export const STATUS_LABELS: Record<string, { text: string; color: string }> = {
-  pending: { text: 'En attente', color: '#FFA500' },
-  confirmed: { text: 'Confirmée', color: '#4cb04f' },
-  in_progress: { text: 'En cours', color: '#2196F3' },
-  completed: { text: 'Terminée', color: '#4CAF50' },
-  cancelled: { text: 'Annulée', color: '#e74c3c' },
+  pending: { text: 'En attente', color: Colors.status.warning },
+  confirmed: { text: 'Confirmée', color: Colors.primary },
+  in_progress: { text: 'En cours', color: Colors.status.info },
+  completed: { text: 'Terminée', color: Colors.primaryLight },
+  cancelled: { text: 'Annulée', color: Colors.status.error },
 };
 
 // Storage keys

@@ -7,7 +7,6 @@ export interface User {
   name: string;
   phone?: string;
   avatar?: string;
-  balance: number;
   createdAt: string;
 }
 
@@ -63,7 +62,10 @@ export interface Booking {
   longitude?: number;
   price: number;
   status: BookingStatus;
+  professional?: string;
+  notes?: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface CreateBookingData {
@@ -97,6 +99,8 @@ export interface PaymentMethod {
   type: 'card';
   last4: string;
   brand: string;
+  expMonth: number;
+  expYear: number;
   isDefault: boolean;
   createdAt: string;
 }
@@ -105,13 +109,6 @@ export interface PaymentIntent {
   clientSecret: string;
   paymentIntentId: string;
   amount: number;
-}
-
-// Wallet
-export interface WalletData {
-  balance: number;
-  transactions: Transaction[];
-  paymentMethods: PaymentMethod[];
 }
 
 // Location
@@ -142,8 +139,6 @@ export type AuthStackParamList = {
 
 export type MainTabParamList = {
   Home: undefined;
-  Agenda: undefined;
-  Wallet: undefined;
   History: undefined;
   Profile: undefined;
 };

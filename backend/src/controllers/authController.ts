@@ -9,7 +9,8 @@ import {
   getRefreshTokenExpiry,
 } from '../config/auth';
 import { asyncHandler, createError } from '../middleware/errorHandler';
-import { generateVerificationToken, sendVerificationEmail, sendWelcomeEmail } from '../services/emailService';
+import { generateVerificationToken, sendVerificationEmail, sendWelcomeEmail, sendPasswordResetEmail } from '../services/emailService';
+import stripeService from '../services/stripeService';
 
 // Inscription
 export const register = asyncHandler(async (req: Request, res: Response) => {
@@ -67,7 +68,6 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
       name: true,
       phone: true,
       avatar: true,
-      balance: true,
       createdAt: true,
     },
   });
@@ -132,7 +132,6 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
         name: user.name,
         phone: user.phone,
         avatar: user.avatar,
-        balance: user.balance,
         createdAt: user.createdAt,
       },
       accessToken,
@@ -170,14 +169,47 @@ export const loginWithGoogle = asyncHandler(async (req: Request, res: Response) 
         email,
         name: name || email.split('@')[0],
         googleId: idToken,
+        emailVerified: true, // Google vérifie l'email
       },
     });
+
+    // Créer le Stripe Customer
+    try {
+      const stripeCustomer = await stripeService.createCustomer({
+        email: user.email,
+        name: user.name,
+        userId: user.id,
+      });
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { stripeCustomerId: stripeCustomer.id },
+      });
+    } catch (error) {
+      console.error('Erreur création Stripe Customer:', error);
+    }
   } else if (!user.googleId) {
     // Lier le compte Google à l'utilisateur existant
     user = await prisma.user.update({
       where: { id: user.id },
       data: { googleId: idToken },
     });
+  }
+
+  // Créer le Stripe Customer si pas encore fait
+  if (!user.stripeCustomerId) {
+    try {
+      const stripeCustomer = await stripeService.createCustomer({
+        email: user.email,
+        name: user.name,
+        userId: user.id,
+      });
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { stripeCustomerId: stripeCustomer.id },
+      });
+    } catch (error) {
+      console.error('Erreur création Stripe Customer:', error);
+    }
   }
 
   // Générer les tokens
@@ -201,7 +233,6 @@ export const loginWithGoogle = asyncHandler(async (req: Request, res: Response) 
         name: user.name,
         phone: user.phone,
         avatar: user.avatar,
-        balance: user.balance,
         createdAt: user.createdAt,
       },
       accessToken,
@@ -241,13 +272,46 @@ export const loginWithApple = asyncHandler(async (req: Request, res: Response) =
         email,
         name: name || 'Utilisateur Apple',
         appleId: idToken,
+        emailVerified: true, // Apple vérifie l'email
       },
     });
+
+    // Créer le Stripe Customer
+    try {
+      const stripeCustomer = await stripeService.createCustomer({
+        email: user.email,
+        name: user.name,
+        userId: user.id,
+      });
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { stripeCustomerId: stripeCustomer.id },
+      });
+    } catch (error) {
+      console.error('Erreur création Stripe Customer:', error);
+    }
   } else if (!user.appleId) {
     user = await prisma.user.update({
       where: { id: user.id },
       data: { appleId: idToken },
     });
+  }
+
+  // Créer le Stripe Customer si pas encore fait
+  if (!user.stripeCustomerId) {
+    try {
+      const stripeCustomer = await stripeService.createCustomer({
+        email: user.email,
+        name: user.name,
+        userId: user.id,
+      });
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { stripeCustomerId: stripeCustomer.id },
+      });
+    } catch (error) {
+      console.error('Erreur création Stripe Customer:', error);
+    }
   }
 
   const accessToken = generateAccessToken({ userId: user.id, email: user.email });
@@ -270,7 +334,6 @@ export const loginWithApple = asyncHandler(async (req: Request, res: Response) =
         name: user.name,
         phone: user.phone,
         avatar: user.avatar,
-        balance: user.balance,
         createdAt: user.createdAt,
       },
       accessToken,
@@ -367,7 +430,6 @@ export const checkAuth = asyncHandler(async (req: Request, res: Response) => {
       name: true,
       phone: true,
       avatar: true,
-      balance: true,
       createdAt: true,
     },
   });
@@ -404,13 +466,30 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
     throw createError('Token invalide ou expiré', 400);
   }
 
-  // Marquer l'email comme vérifié
+  // Créer le Stripe Customer si pas encore fait
+  let stripeCustomerId = user.stripeCustomerId;
+  if (!stripeCustomerId) {
+    try {
+      const stripeCustomer = await stripeService.createCustomer({
+        email: user.email,
+        name: user.name,
+        userId: user.id,
+      });
+      stripeCustomerId = stripeCustomer.id;
+    } catch (error) {
+      console.error('Erreur création Stripe Customer:', error);
+      // On continue même si Stripe échoue, le customer sera créé plus tard
+    }
+  }
+
+  // Marquer l'email comme vérifié et sauvegarder le stripeCustomerId
   await prisma.user.update({
     where: { id: user.id },
     data: {
       emailVerified: true,
       emailVerificationToken: null,
       emailVerificationExpires: null,
+      stripeCustomerId,
     },
   });
 
@@ -486,4 +565,275 @@ export const resendVerification = asyncHandler(async (req: Request, res: Respons
     success: true,
     message: 'Un nouveau lien de vérification a été envoyé.',
   });
+});
+
+// Mot de passe oublié - Demander la réinitialisation
+export const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
+  const { email } = req.body;
+
+  if (!email) {
+    throw createError('Email requis', 400);
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  // Ne pas révéler si l'utilisateur existe ou non (sécurité)
+  if (!user) {
+    return res.json({
+      success: true,
+      message: 'Si cet email existe, un lien de réinitialisation a été envoyé.',
+    });
+  }
+
+  // Vérifier si l'utilisateur a un mot de passe (pas social auth uniquement)
+  if (!user.password) {
+    return res.json({
+      success: true,
+      message: 'Si cet email existe, un lien de réinitialisation a été envoyé.',
+    });
+  }
+
+  // Générer le token de réinitialisation
+  const resetToken = generateVerificationToken();
+  const resetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 heure
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      passwordResetToken: resetToken,
+      passwordResetExpires: resetExpires,
+    },
+  });
+
+  // Envoyer l'email
+  await sendPasswordResetEmail(email, resetToken);
+
+  res.json({
+    success: true,
+    message: 'Si cet email existe, un lien de réinitialisation a été envoyé.',
+  });
+});
+
+// Réinitialiser le mot de passe
+export const resetPassword = asyncHandler(async (req: Request, res: Response) => {
+  const { token, password } = req.body;
+
+  if (!token || !password) {
+    throw createError('Token et nouveau mot de passe requis', 400);
+  }
+
+  if (password.length < 6) {
+    throw createError('Le mot de passe doit contenir au moins 6 caractères', 400);
+  }
+
+  // Trouver l'utilisateur avec ce token
+  const user = await prisma.user.findFirst({
+    where: {
+      passwordResetToken: token,
+      passwordResetExpires: {
+        gt: new Date(),
+      },
+    },
+  });
+
+  if (!user) {
+    throw createError('Token invalide ou expiré', 400);
+  }
+
+  // Hasher le nouveau mot de passe
+  const hashedPassword = await bcrypt.hash(password, 12);
+
+  // Mettre à jour l'utilisateur
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      password: hashedPassword,
+      passwordResetToken: null,
+      passwordResetExpires: null,
+    },
+  });
+
+  // Supprimer tous les refresh tokens existants (déconnexion de toutes les sessions)
+  await prisma.refreshToken.deleteMany({
+    where: { userId: user.id },
+  });
+
+  res.json({
+    success: true,
+    message: 'Mot de passe réinitialisé avec succès. Vous pouvez maintenant vous connecter.',
+  });
+});
+
+// Page web de réinitialisation du mot de passe
+export const resetPasswordPage = asyncHandler(async (req: Request, res: Response) => {
+  const { token } = req.query;
+
+  if (!token || typeof token !== 'string') {
+    return res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Erreur - CleanHouse</title>
+        <style>
+          body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #f5f5f5; }
+          .container { text-align: center; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 400px; margin: 20px; }
+          .error { color: #e74c3c; font-size: 60px; }
+          h1 { color: #333; }
+          p { color: #666; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="error">✗</div>
+          <h1>Lien invalide</h1>
+          <p>Le lien de réinitialisation est invalide ou a expiré.</p>
+          <p>Veuillez demander un nouveau lien depuis l'application.</p>
+        </div>
+      </body>
+      </html>
+    `);
+  }
+
+  // Vérifier si le token est valide
+  const user = await prisma.user.findFirst({
+    where: {
+      passwordResetToken: token,
+      passwordResetExpires: {
+        gt: new Date(),
+      },
+    },
+  });
+
+  if (!user) {
+    return res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Lien expiré - CleanHouse</title>
+        <style>
+          body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #f5f5f5; }
+          .container { text-align: center; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 400px; margin: 20px; }
+          .error { color: #e74c3c; font-size: 60px; }
+          h1 { color: #333; }
+          p { color: #666; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="error">✗</div>
+          <h1>Lien expiré</h1>
+          <p>Ce lien de réinitialisation a expiré.</p>
+          <p>Veuillez demander un nouveau lien depuis l'application.</p>
+        </div>
+      </body>
+      </html>
+    `);
+  }
+
+  // Afficher le formulaire de réinitialisation
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Réinitialiser le mot de passe - CleanHouse</title>
+      <style>
+        body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: linear-gradient(135deg, #85409D 0%, #A668BE 100%); }
+        .container { background: white; padding: 40px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); max-width: 400px; width: 90%; margin: 20px; }
+        .logo { font-size: 28px; font-weight: bold; color: #85409D; text-align: center; margin-bottom: 30px; }
+        h1 { color: #333; text-align: center; font-size: 22px; margin-bottom: 20px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; color: #666; margin-bottom: 8px; font-size: 14px; }
+        input { width: 100%; padding: 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
+        input:focus { outline: none; border-color: #85409D; }
+        button { width: 100%; padding: 14px; background: linear-gradient(135deg, #5E2D6F 0%, #85409D 50%, #A668BE 100%); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button:hover { opacity: 0.9; }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        .message { padding: 12px; border-radius: 8px; margin-bottom: 20px; text-align: center; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .requirements { font-size: 12px; color: #888; margin-top: 8px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="logo">CleanHouse</div>
+        <h1>Nouveau mot de passe</h1>
+        <div id="message"></div>
+        <form id="resetForm">
+          <div class="form-group">
+            <label>Nouveau mot de passe</label>
+            <input type="password" id="password" placeholder="••••••••" required minlength="6">
+            <div class="requirements">Minimum 6 caractères</div>
+          </div>
+          <div class="form-group">
+            <label>Confirmer le mot de passe</label>
+            <input type="password" id="confirmPassword" placeholder="••••••••" required>
+          </div>
+          <button type="submit" id="submitBtn">Réinitialiser</button>
+        </form>
+      </div>
+      <script>
+        const form = document.getElementById('resetForm');
+        const messageDiv = document.getElementById('message');
+        const submitBtn = document.getElementById('submitBtn');
+
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+
+          const password = document.getElementById('password').value;
+          const confirmPassword = document.getElementById('confirmPassword').value;
+
+          if (password !== confirmPassword) {
+            messageDiv.className = 'message error';
+            messageDiv.textContent = 'Les mots de passe ne correspondent pas';
+            return;
+          }
+
+          if (password.length < 6) {
+            messageDiv.className = 'message error';
+            messageDiv.textContent = 'Le mot de passe doit contenir au moins 6 caractères';
+            return;
+          }
+
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Réinitialisation...';
+
+          try {
+            const response = await fetch('/api/auth/reset-password', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ token: '${token}', password })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+              messageDiv.className = 'message success';
+              messageDiv.textContent = 'Mot de passe réinitialisé ! Vous pouvez fermer cette page et vous connecter dans l\\'application.';
+              form.style.display = 'none';
+            } else {
+              messageDiv.className = 'message error';
+              messageDiv.textContent = data.error || 'Une erreur est survenue';
+              submitBtn.disabled = false;
+              submitBtn.textContent = 'Réinitialiser';
+            }
+          } catch (error) {
+            messageDiv.className = 'message error';
+            messageDiv.textContent = 'Erreur de connexion au serveur';
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Réinitialiser';
+          }
+        });
+      </script>
+    </body>
+    </html>
+  `);
 });

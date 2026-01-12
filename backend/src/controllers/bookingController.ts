@@ -87,6 +87,17 @@ export const getBooking = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
+// Helper pour parser une date DD/MM/YYYY
+const parseDateDDMMYYYY = (dateStr: string): Date => {
+  // Si c'est déjà une date ISO, la parser directement
+  if (dateStr.includes('T') || dateStr.includes('-')) {
+    return new Date(dateStr);
+  }
+  // Sinon parser DD/MM/YYYY
+  const [day, month, year] = dateStr.split('/').map(Number);
+  return new Date(year, month - 1, day);
+};
+
 // Créer une réservation
 export const createBooking = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user!.id;
@@ -98,12 +109,15 @@ export const createBooking = asyncHandler(async (req: Request, res: Response) =>
   // Assigner un professionnel simulé
   const professional = getRandomProfessional();
 
+  // Parser la date correctement (DD/MM/YYYY)
+  const parsedDate = parseDateDDMMYYYY(date);
+
   // Créer la réservation
   const booking = await prisma.booking.create({
     data: {
       userId,
       service: service as ServiceType,
-      date: new Date(date),
+      date: parsedDate,
       time,
       duration,
       address,
@@ -152,7 +166,7 @@ export const updateBooking = asyncHandler(async (req: Request, res: Response) =>
   const booking = await prisma.booking.update({
     where: { id },
     data: {
-      date: date ? new Date(date) : undefined,
+      date: date ? parseDateDDMMYYYY(date) : undefined,
       time,
       duration,
       address,
@@ -211,11 +225,6 @@ export const cancelBooking = asyncHandler(async (req: Request, res: Response) =>
       },
     });
 
-    // Mettre à jour le solde de l'utilisateur
-    await prisma.user.update({
-      where: { id: userId },
-      data: { balance: { increment: transaction.amount } },
-    });
   }
 
   res.json({

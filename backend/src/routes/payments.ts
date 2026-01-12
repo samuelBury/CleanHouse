@@ -3,10 +3,12 @@ import { Router } from 'express';
 import {
   createPaymentIntent,
   confirmPayment,
+  payWithSavedCard,
   getPaymentMethods,
   addPaymentMethod,
   deletePaymentMethod,
   setDefaultPaymentMethod,
+  saveCardFromPayment,
   handleWebhook,
 } from '../controllers/paymentController';
 import { authenticate } from '../middleware/auth';
@@ -28,6 +30,10 @@ router.use(authenticate);
 // PaymentIntent
 router.post('/create-intent', validate(createPaymentIntentValidation), createPaymentIntent);
 router.post('/confirm', confirmPayment);
+router.post('/pay-with-saved-card', payWithSavedCard);
+
+// Sauvegarder la carte après un paiement
+router.post('/save-card', saveCardFromPayment);
 
 // Méthodes de paiement
 router.get('/methods', getPaymentMethods);

@@ -39,7 +39,7 @@ const bookingReducer = (state: BookingState, action: BookingAction): BookingStat
     case 'SET_BOOKINGS':
       return { ...state, bookings: action.payload, isLoading: false };
     case 'ADD_BOOKING':
-      return { ...state, bookings: [action.payload, ...state.bookings] };
+      return { ...state, bookings: [action.payload, ...state.bookings], isLoading: false };
     case 'UPDATE_BOOKING':
       return {
         ...state,

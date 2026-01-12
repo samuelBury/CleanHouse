@@ -1,8 +1,25 @@
 // Système de thème centralisé pour CleanHouse
 
 export const Colors = {
-  // Couleur principale
-  primary: '#4cb04f',      // Vert
+  // Couleur principale (Violet)
+  primary: '#85409D',
+  primaryDark: '#5E2D6F',
+  primaryLight: '#A668BE',
+  primaryBackground: '#F4E9F8',
+  primaryPastel: '#DBC4E8',
+
+  // Couleur secondaire (Violet)
+  secondary: '#85409D',
+  secondaryDark: '#5E2D6F',
+  secondaryLight: '#A668BE',
+  secondaryBackground: '#F4E9F8',
+  secondaryPastel: '#DBC4E8',
+
+  // Dégradé principal (pour les boutons)
+  gradient: ['#5E2D6F', '#85409D', '#A668BE'] as const,
+
+  // Dégradé secondaire (violet)
+  gradientSecondary: ['#5E2D6F', '#85409D', '#A668BE'] as const,
 
   // Texte
   text: {
@@ -27,7 +44,7 @@ export const Colors = {
 
   // États/Feedback
   status: {
-    success: '#4CAF50',
+    success: '#A668BE',
     error: '#e74c3c',
     warning: '#FF6B6B',
     info: '#2196F3',

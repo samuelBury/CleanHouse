@@ -16,7 +16,6 @@ export const getProfile = asyncHandler(async (req: Request, res: Response) => {
       name: true,
       phone: true,
       avatar: true,
-      balance: true,
       createdAt: true,
       _count: {
         select: {
@@ -59,7 +58,6 @@ export const updateProfile = asyncHandler(async (req: Request, res: Response) =>
       name: true,
       phone: true,
       avatar: true,
-      balance: true,
       createdAt: true,
     },
   });
@@ -111,87 +109,6 @@ export const changePassword = asyncHandler(async (req: Request, res: Response) =
   });
 });
 
-// Obtenir le portefeuille (solde + transactions)
-export const getWallet = asyncHandler(async (req: Request, res: Response) => {
-  const userId = req.user!.id;
-  const { page = 1, limit = 20 } = req.query;
-
-  const skip = (Number(page) - 1) * Number(limit);
-
-  const [user, transactions, total] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: { balance: true },
-    }),
-    prisma.transaction.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      skip,
-      take: Number(limit),
-      include: {
-        booking: {
-          select: {
-            service: true,
-            date: true,
-          },
-        },
-      },
-    }),
-    prisma.transaction.count({ where: { userId } }),
-  ]);
-
-  if (!user) {
-    throw createError('Utilisateur non trouvé', 404);
-  }
-
-  res.json({
-    success: true,
-    data: {
-      balance: user.balance,
-      transactions,
-      pagination: {
-        page: Number(page),
-        limit: Number(limit),
-        total,
-        totalPages: Math.ceil(total / Number(limit)),
-      },
-    },
-  });
-});
-
-// Ajouter des fonds au portefeuille (simulation)
-export const addFunds = asyncHandler(async (req: Request, res: Response) => {
-  const userId = req.user!.id;
-  const { amount } = req.body;
-
-  if (!amount || amount <= 0) {
-    throw createError('Montant invalide', 400);
-  }
-
-  // Créer la transaction
-  await prisma.transaction.create({
-    data: {
-      userId,
-      type: 'deposit',
-      amount,
-      description: 'Dépôt sur le portefeuille',
-    },
-  });
-
-  // Mettre à jour le solde
-  const user = await prisma.user.update({
-    where: { id: userId },
-    data: { balance: { increment: amount } },
-    select: { balance: true },
-  });
-
-  res.json({
-    success: true,
-    data: { balance: user.balance },
-    message: `${amount.toFixed(2)} EUR ajoutés au portefeuille`,
-  });
-});
-
 // Obtenir les statistiques de l'utilisateur
 export const getStats = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user!.id;
@@ -240,6 +157,27 @@ export const getStats = asyncHandler(async (req: Request, res: Response) => {
 // Supprimer le compte
 export const deleteAccount = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user!.id;
+  const { password } = req.body;
+
+  // Récupérer l'utilisateur avec le mot de passe
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!user) {
+    throw createError('Utilisateur non trouvé', 404);
+  }
+
+  // Vérifier le mot de passe si l'utilisateur en a un
+  if (user.password) {
+    if (!password) {
+      throw createError('Mot de passe requis', 400);
+    }
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      throw createError('Mot de passe incorrect', 400);
+    }
+  }
 
   // Supprimer toutes les données de l'utilisateur (cascade via Prisma)
   await prisma.user.delete({

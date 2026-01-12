@@ -7,7 +7,13 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  ScrollView,
+  Platform,
 } from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {PlatformPay, usePlatformPay, PlatformPayButton} from '@stripe/stripe-react-native';
+import {FontAwesome5} from '@expo/vector-icons';
+import {LinearGradient} from 'expo-linear-gradient';
 import CardInputModal from './CardInputModal';
 import {Colors} from '../config/theme';
 import {paymentService} from '../services/paymentService';
@@ -34,12 +40,26 @@ export default function PaymentModal({
   duration,
   isIndeterminate,
 }: PaymentModalProps) {
+  const insets = useSafeAreaInsets();
+  const {isPlatformPaySupported, confirmPlatformPayPayment} = usePlatformPay();
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
   const [showCardInput, setShowCardInput] = useState(false);
   const [clientSecret, setClientSecret] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [savedCards, setSavedCards] = useState<PaymentMethod[]>([]);
   const [loadingCards, setLoadingCards] = useState(true);
+  const [applePayAvailable, setApplePayAvailable] = useState(false);
+
+  // Vérifier si Apple Pay est disponible
+  useEffect(() => {
+    const checkApplePay = async () => {
+      if (Platform.OS === 'ios') {
+        const isSupported = await isPlatformPaySupported();
+        setApplePayAvailable(isSupported);
+      }
+    };
+    checkApplePay();
+  }, []);
 
   // Charger les cartes sauvegardées
   useEffect(() => {
@@ -55,6 +75,53 @@ export default function PaymentModal({
       setSavedCards(result.data);
     }
     setLoadingCards(false);
+  };
+
+  // Paiement Apple Pay
+  const handleApplePay = async () => {
+    setIsLoading(true);
+
+    try {
+      // Créer le PaymentIntent côté serveur
+      const intentResult = await paymentService.createPaymentIntent(getAmountInCents());
+
+      if (!intentResult.success || !intentResult.data?.clientSecret) {
+        Alert.alert('Erreur', intentResult.error || 'Impossible de créer le paiement');
+        setIsLoading(false);
+        return;
+      }
+
+      // Confirmer le paiement avec Apple Pay
+      const {error, paymentIntent} = await confirmPlatformPayPayment(
+        intentResult.data.clientSecret,
+        {
+          applePay: {
+            cartItems: [
+              {
+                label: service,
+                amount: String(getAmountInCents() / 100),
+                paymentType: PlatformPay.PaymentType.Immediate,
+              },
+            ],
+            merchantCountryCode: 'FR',
+            currencyCode: 'EUR',
+          },
+        }
+      );
+
+      if (error) {
+        if (error.code !== 'Canceled') {
+          Alert.alert('Erreur', error.message || 'Le paiement a échoué');
+        }
+      } else if (paymentIntent) {
+        // Paiement réussi - Appeler directement onConfirm pour créer la réservation
+        onConfirm(paymentIntent.id);
+      }
+    } catch (error) {
+      Alert.alert('Erreur', 'Une erreur est survenue lors du paiement');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Calculer le prix
@@ -76,41 +143,110 @@ export default function PaymentModal({
     if (isIndeterminate) {
       return `${rate}€/h`;
     }
-    return `${rate * duration}€`;
+    const hours = duration > 0 ? duration : 1;
+    return `${rate * hours}€`;
   };
 
   const getAmountInCents = () => {
     const rate = getRate();
     // Pour durée indéterminée, pré-autoriser 3h
-    const hours = isIndeterminate ? 3 : duration;
+    // Si duration est 0 mais pas indéterminée, utiliser 1h minimum
+    const hours = isIndeterminate ? 3 : (duration > 0 ? duration : 1);
     return rate * hours * 100; // Stripe utilise les centimes
   };
 
   const handlePaymentSelect = async () => {
     if (!selectedPayment) return;
 
+    // Si c'est une nouvelle carte, ne rien faire ici (géré par handleNewCardPress)
+    if (selectedPayment === 'new_card') {
+      return;
+    }
+
+    // Sinon, payer avec la carte sauvegardée
+    const savedCard = savedCards.find(c => c.id === selectedPayment);
+    if (!savedCard) return;
+
     setIsLoading(true);
 
     try {
-      // Créer un PaymentIntent via le backend
+      console.log('Paying with saved card:', savedCard.stripeId);
+      const result = await paymentService.payWithSavedCard(
+        savedCard.stripeId,
+        getAmountInCents()
+      );
+
+      if (result.success && result.data?.paymentIntentId) {
+        console.log('Payment successful:', result.data.paymentIntentId);
+        // Appeler directement onConfirm pour créer la réservation
+        onConfirm(result.data.paymentIntentId);
+      } else {
+        Alert.alert('Erreur', result.error || 'Le paiement a échoué');
+      }
+    } catch (error) {
+      console.log('Payment error:', error);
+      Alert.alert('Erreur', 'Une erreur est survenue lors du paiement');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Nouvelle carte - ouvre directement le formulaire
+  const handleNewCardPress = async () => {
+    console.log('=== handleNewCardPress called ===');
+    console.log('Amount in cents:', getAmountInCents());
+
+    if (isLoading) {
+      console.log('Already loading, skipping...');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      console.log('Creating PaymentIntent...');
       const result = await paymentService.createPaymentIntent(getAmountInCents());
+      console.log('PaymentIntent result:', result);
 
       if (result.success && result.data?.clientSecret) {
+        console.log('PaymentIntent created successfully');
         setClientSecret(result.data.clientSecret);
         setShowCardInput(true);
       } else {
+        console.log('PaymentIntent failed:', result.error);
         Alert.alert('Erreur', result.error || 'Impossible de créer le paiement');
       }
     } catch (error) {
+      console.log('PaymentIntent error:', error);
       Alert.alert('Erreur', 'Une erreur est survenue');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleCardSuccess = (paymentIntentId: string) => {
+  const handleCardSuccess = async (paymentIntentId: string, shouldSaveCard: boolean) => {
+    console.log('=== handleCardSuccess ===');
+    console.log('paymentIntentId:', paymentIntentId);
+    console.log('shouldSaveCard:', shouldSaveCard);
+
     setShowCardInput(false);
     setClientSecret('');
+
+    // Sauvegarder la carte si demandé (en arrière-plan)
+    if (shouldSaveCard) {
+      paymentService.saveCardFromPayment(paymentIntentId)
+        .then(result => {
+          if (result.success) {
+            console.log('Card saved successfully:', result.data);
+          } else {
+            console.log('Failed to save card:', result.error);
+          }
+        })
+        .catch(error => console.log('Error saving card:', error));
+    }
+
+    // Appeler directement onConfirm pour créer la réservation
+    console.log('=== Calling onConfirm with paymentIntentId ===');
     onConfirm(paymentIntentId);
   };
 
@@ -129,7 +265,7 @@ export default function PaymentModal({
       <Modal
         animationType="slide"
         transparent={true}
-        visible={visible}
+        visible={visible && !showCardInput}
         onRequestClose={handleClose}
       >
         <View style={styles.modalOverlay}>
@@ -138,20 +274,24 @@ export default function PaymentModal({
             activeOpacity={1}
             onPress={handleClose}
           />
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, {paddingBottom: insets.bottom + 20}]}>
             {/* Modal Header */}
             <View style={styles.modalHeader}>
               <View style={styles.modalHeaderIcon}>
-                <Text style={styles.modalIconText}>💳</Text>
+                <FontAwesome5 name="credit-card" size={18} color={Colors.text.inverse} solid />
               </View>
               <Text style={styles.modalHeaderTitle}>Moyen de paiement</Text>
               <TouchableOpacity style={styles.modalCloseButton} onPress={handleClose}>
-                <Text style={styles.modalCloseText}>✕</Text>
+                <FontAwesome5 name="times" size={16} color={Colors.text.inverse} />
               </TouchableOpacity>
             </View>
 
-            {/* Payment Methods */}
-            <View style={styles.paymentContainer}>
+            {/* Payment Methods - Scrollable */}
+            <ScrollView
+              style={styles.scrollView}
+              contentContainerStyle={styles.scrollViewContent}
+              showsVerticalScrollIndicator={false}
+            >
               {/* Récapitulatif de la commande */}
               <View style={styles.summaryContainer}>
                 <Text style={styles.summaryTitle}>Récapitulatif</Text>
@@ -170,7 +310,7 @@ export default function PaymentModal({
                 <View style={styles.summaryRow}>
                   <Text style={styles.summaryLabel}>Durée</Text>
                   <Text style={styles.summaryValue}>
-                    {isIndeterminate ? 'Indéterminée' : `${duration}h`}
+                    {isIndeterminate ? 'Indéterminée' : `${duration > 0 ? duration : 1}h`}
                   </Text>
                 </View>
                 <View style={styles.summaryRow}>
@@ -180,6 +320,30 @@ export default function PaymentModal({
               </View>
 
               <Text style={styles.sectionTitle}>Choisissez votre méthode de paiement</Text>
+
+              {/* Apple Pay */}
+              {applePayAvailable && (
+                <TouchableOpacity
+                  style={[
+                    styles.paymentOption,
+                    styles.applePayOption,
+                    selectedPayment === 'apple_pay' && styles.paymentOptionSelected,
+                  ]}
+                  onPress={() => {
+                    setSelectedPayment('apple_pay');
+                    handleApplePay();
+                  }}
+                  disabled={isLoading}
+                >
+                  <View style={styles.applePayIconContainer}>
+                    <Text style={styles.applePayIcon}></Text>
+                  </View>
+                  <View style={styles.cardInfo}>
+                    <Text style={styles.applePayText}>Apple Pay</Text>
+                    <Text style={styles.applePaySubtext}>Paiement rapide et sécurisé</Text>
+                  </View>
+                </TouchableOpacity>
+              )}
 
               {/* Cartes sauvegardées */}
               {loadingCards ? (
@@ -198,7 +362,7 @@ export default function PaymentModal({
                       onPress={() => setSelectedPayment(card.id)}
                     >
                       <View style={styles.paymentIconContainer}>
-                        <Text style={styles.paymentIcon}>💳</Text>
+                        <FontAwesome5 name="credit-card" size={18} color={Colors.primary} solid />
                       </View>
                       <View style={styles.cardInfo}>
                         <Text style={styles.paymentName}>
@@ -229,33 +393,46 @@ export default function PaymentModal({
                   styles.paymentOption,
                   selectedPayment === 'new_card' && styles.paymentOptionSelected,
                 ]}
-                onPress={() => setSelectedPayment('new_card')}
+                onPress={() => {
+                  console.log('=== Nouvelle carte pressed ===');
+                  setSelectedPayment('new_card');
+                  // Ouvrir directement le formulaire de carte
+                  handleNewCardPress();
+                }}
+                disabled={isLoading}
               >
                 <View style={styles.paymentIconContainer}>
-                  <Text style={styles.paymentIcon}>➕</Text>
+                  <FontAwesome5 name="plus" size={18} color={Colors.primary} />
                 </View>
-                <Text style={styles.paymentName}>Nouvelle carte</Text>
-                <View style={styles.radioButton}>
-                  {selectedPayment === 'new_card' && (
-                    <View style={styles.radioButtonInner} />
-                  )}
+                <View style={styles.cardInfo}>
+                  <Text style={styles.paymentName}>Nouvelle carte</Text>
                 </View>
               </TouchableOpacity>
+            </ScrollView>
 
-              {/* Confirm Button */}
+            {/* Confirm Button - Fixed at bottom */}
+            <View style={styles.buttonContainer}>
               <TouchableOpacity
-                style={[
-                  styles.confirmButton,
-                  (!selectedPayment || isLoading) && styles.confirmButtonDisabled,
-                ]}
-                disabled={!selectedPayment || isLoading}
+                style={styles.confirmButtonContainer}
+                disabled={!selectedPayment || isLoading || selectedPayment === 'new_card'}
                 onPress={handlePaymentSelect}
+                activeOpacity={0.8}
               >
-                {isLoading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.confirmButtonText}>Continuer</Text>
-                )}
+                <LinearGradient
+                  colors={Colors.gradient}
+                  start={{x: 0, y: 0}}
+                  end={{x: 1, y: 1}}
+                  style={[
+                    styles.confirmButton,
+                    (!selectedPayment || isLoading || selectedPayment === 'new_card') && styles.confirmButtonDisabled,
+                  ]}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.confirmButtonText}>Continuer</Text>
+                  )}
+                </LinearGradient>
               </TouchableOpacity>
             </View>
           </View>
@@ -292,8 +469,18 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background.primary,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    paddingBottom: 20,
-    maxHeight: '85%',
+    maxHeight: '90%',
+  },
+  scrollView: {
+    flexGrow: 0,
+  },
+  scrollViewContent: {
+    padding: 20,
+    paddingBottom: 10,
+  },
+  buttonContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
   },
   modalHeader: {
     borderTopLeftRadius: 24,
@@ -302,7 +489,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     position: 'relative',
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.secondary,
   },
   modalHeaderIcon: {
     width: 40,
@@ -335,9 +522,6 @@ const styles = StyleSheet.create({
     color: Colors.text.inverse,
     fontWeight: '400',
   },
-  paymentContainer: {
-    padding: 20,
-  },
   summaryContainer: {
     backgroundColor: Colors.background.secondary,
     borderRadius: 12,
@@ -347,7 +531,7 @@ const styles = StyleSheet.create({
   summaryTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.text.primary,
+    color: Colors.secondary,
     marginBottom: 12,
   },
   summaryRow: {
@@ -372,7 +556,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.text.primary,
+    color: Colors.secondary,
     marginBottom: 16,
   },
   loadingContainer: {
@@ -391,7 +575,33 @@ const styles = StyleSheet.create({
   },
   paymentOptionSelected: {
     borderColor: Colors.primary,
-    backgroundColor: '#e8f5e9',
+    backgroundColor: 'Colors.primaryBackground',
+  },
+  applePayOption: {
+    backgroundColor: '#000',
+  },
+  applePayIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  applePayIcon: {
+    fontSize: 24,
+    color: '#000',
+  },
+  applePayText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  applePaySubtext: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginTop: 2,
   },
   paymentIconContainer: {
     width: 40,
@@ -445,15 +655,23 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: Colors.primary,
   },
+  confirmButtonContainer: {
+    marginTop: 20,
+    borderRadius: 30,
+    overflow: 'hidden',
+    shadowColor: 'Colors.primary',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
   confirmButton: {
-    backgroundColor: Colors.primary,
-    borderRadius: 12,
+    borderRadius: 30,
     padding: 16,
     alignItems: 'center',
-    marginTop: 20,
   },
   confirmButtonDisabled: {
-    backgroundColor: Colors.border.medium,
+    opacity: 0.5,
   },
   confirmButtonText: {
     color: Colors.text.inverse,

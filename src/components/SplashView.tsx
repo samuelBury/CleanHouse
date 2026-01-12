@@ -9,6 +9,7 @@ import {
   Dimensions,
   StatusBar,
 } from 'react-native';
+import {FontAwesome5} from '@expo/vector-icons';
 import {Colors} from '../config/theme';
 
 const {width, height} = Dimensions.get('window');
@@ -75,7 +76,7 @@ export default function SplashScreen({onFinish}: SplashScreenProps) {
           {/* Logo en haut */}
           <View style={styles.logoContainer}>
             <View style={styles.logoIcon}>
-              <Text style={styles.logoIconText}>✨</Text>
+              <FontAwesome5 name="magic" size={16} color="#fff" />
             </View>
             <Text style={styles.logoText}>CleanHome</Text>
           </View>
@@ -108,15 +109,15 @@ export default function SplashScreen({onFinish}: SplashScreenProps) {
         {/* Badges en bas */}
         <View style={styles.badgesContainer}>
           <View style={styles.badge}>
-            <Text style={styles.badgeIconStar}>⭐</Text>
+            <FontAwesome5 name="star" solid size={16} color="#FFD700" style={styles.badgeIconStar} />
             <Text style={styles.badgeText}>4.9/5</Text>
           </View>
           <View style={styles.badge}>
-            <Text style={styles.badgeIconCheck}>✓</Text>
+            <FontAwesome5 name="check" size={16} color={Colors.primary} style={styles.badgeIconCheck} />
             <Text style={styles.badgeText}>500+ pros</Text>
           </View>
           <View style={styles.badge}>
-            <Text style={styles.badgeIconShield}>🛡️</Text>
+            <FontAwesome5 name="shield-alt" size={16} color="#fff" style={styles.badgeIconShield} />
             <Text style={styles.badgeText}>Assurée</Text>
           </View>
         </View>
@@ -166,7 +167,6 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   logoIconText: {
-    fontSize: 16,
   },
   logoText: {
     fontSize: 20,
@@ -249,16 +249,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   badgeIconStar: {
-    fontSize: 16,
     marginRight: 6,
   },
   badgeIconCheck: {
-    fontSize: 16,
     marginRight: 6,
-    color: Colors.primary,
   },
   badgeIconShield: {
-    fontSize: 16,
     marginRight: 6,
   },
   badgeText: {

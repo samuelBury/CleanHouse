@@ -8,6 +8,7 @@ import {
   Dimensions,
   Switch,
 } from 'react-native';
+import {FontAwesome5} from '@expo/vector-icons';
 import {Colors} from '../config/theme';
 
 const {width} = Dimensions.get('window');
@@ -15,28 +16,23 @@ const {width} = Dimensions.get('window');
 interface ProfileDrawerProps {
   visible: boolean;
   onClose: () => void;
-  onWalletPress: () => void;
   onHistoryPress: () => void;
 }
 
-export default function ProfileDrawer({visible, onClose, onWalletPress, onHistoryPress}: ProfileDrawerProps) {
+export default function ProfileDrawer({visible, onClose, onHistoryPress}: ProfileDrawerProps) {
   const [isAvailable, setIsAvailable] = React.useState(true);
 
   const menuItems = [
-    {icon: '🏠', label: 'Accueil', active: true, action: 'home'},
-    {icon: '💳', label: 'Mon Portefeuille', action: 'wallet'},
-    {icon: '📋', label: 'Historique', action: 'history'},
-    {icon: '👥', label: 'Inviter des amis', action: 'invite'},
-    {icon: '⚙️', label: 'Paramètres', action: 'settings'},
-    {icon: '🚪', label: 'Déconnexion', danger: true, action: 'logout'},
+    {icon: 'home', label: 'Accueil', active: true, action: 'home'},
+    {icon: 'clipboard-list', label: 'Historique', action: 'history'},
+    {icon: 'user-friends', label: 'Inviter des amis', action: 'invite'},
+    {icon: 'cog', label: 'Paramètres', action: 'settings'},
+    {icon: 'sign-out-alt', label: 'Déconnexion', danger: true, action: 'logout'},
   ];
 
   const handleMenuPress = (action: string) => {
     if (action === 'home') {
       onClose();
-    } else if (action === 'wallet') {
-      onClose();
-      onWalletPress();
     } else if (action === 'history') {
       onClose();
       onHistoryPress();
@@ -68,7 +64,7 @@ export default function ProfileDrawer({visible, onClose, onWalletPress, onHistor
                 value={isAvailable}
                 onValueChange={setIsAvailable}
                 trackColor={{false: '#ccc', true: '#fff'}}
-                thumbColor={isAvailable ? '#5FB17C' : '#f4f3f4'}
+                thumbColor={isAvailable ? Colors.primaryLight : '#f4f3f4'}
                 style={styles.toggle}
               />
             </View>
@@ -83,20 +79,20 @@ export default function ProfileDrawer({visible, onClose, onWalletPress, onHistor
             {/* Nom et badge */}
             <Text style={styles.profileName}>Jean Dupont</Text>
             <View style={styles.badge}>
-              <Text style={styles.badgeIcon}>⭐</Text>
+              <FontAwesome5 name="star" size={12} color="#FFD700" solid style={styles.badgeIcon} />
               <Text style={styles.badgeText}>Gold member</Text>
             </View>
 
             {/* Statistiques */}
             <View style={styles.statsContainer}>
               <View style={styles.statItem}>
-                <Text style={styles.statIcon}>⏱️</Text>
+                <FontAwesome5 name="stopwatch" size={16} color={Colors.text.inverse} style={styles.statIcon} />
                 <Text style={styles.statValue}>10.2</Text>
                 <Text style={styles.statLabel}>Heures réservées</Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.statItem}>
-                <Text style={styles.statIcon}>✨</Text>
+                <FontAwesome5 name="magic" size={16} color={Colors.text.inverse} style={styles.statIcon} />
                 <Text style={styles.statValue}>20</Text>
                 <Text style={styles.statLabel}>Prestations</Text>
               </View>
@@ -111,7 +107,7 @@ export default function ProfileDrawer({visible, onClose, onWalletPress, onHistor
                 style={styles.menuItem}
                 onPress={() => handleMenuPress(item.action)}
               >
-                <Text style={styles.menuIcon}>{item.icon}</Text>
+                <FontAwesome5 name={item.icon} size={22} color={item.active ? Colors.primary : (item.danger ? Colors.status.error : Colors.text.primary)} style={styles.menuIcon} />
                 <Text
                   style={[
                     styles.menuLabel,
@@ -228,7 +224,6 @@ const styles = StyleSheet.create({
     marginVertical: 4,
   },
   statIcon: {
-    fontSize: 16,
     marginBottom: 4,
   },
   statValue: {
@@ -255,7 +250,6 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f0f0f0',
   },
   menuIcon: {
-    fontSize: 22,
     marginRight: 16,
     width: 30,
     textAlign: 'center',

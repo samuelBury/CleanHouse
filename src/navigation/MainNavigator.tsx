@@ -1,11 +1,12 @@
 // Navigation principale avec tabs
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { LinearGradient } from 'expo-linear-gradient';
+import { FontAwesome5 } from '@expo/vector-icons';
 
 import HomeScreen from '../screens/HomeScreen';
-import AgendaScreen from '../screens/AgendaScreen';
-import WalletScreen from '../screens/WalletScreen';
 import HistoryScreen from '../screens/HistoryScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 
@@ -14,131 +15,115 @@ import type { MainTabParamList } from '../types';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
-// Custom tab bar icon component
-const TabIcon: React.FC<{ icon: string; focused: boolean; label: string }> = ({
-  icon,
-  focused,
-  label,
-}) => (
-  <View style={styles.tabIconContainer}>
-    <Text style={[styles.tabIcon, focused && styles.tabIconFocused]}>{icon}</Text>
-    <Text style={[styles.tabLabel, focused && styles.tabLabelFocused]}>{label}</Text>
-  </View>
-);
+// Custom floating tab bar with gradient
+const FloatingTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
+  const icons: Record<string, string> = {
+    Home: 'home',
+    History: 'clipboard-list',
+    Profile: 'user',
+  };
 
-// Custom center button for booking
-const CenterButton: React.FC<{ onPress: () => void }> = ({ onPress }) => (
-  <TouchableOpacity style={styles.centerButton} onPress={onPress} activeOpacity={0.8}>
-    <Text style={styles.centerButtonText}>+</Text>
-  </TouchableOpacity>
-);
+  return (
+    <>
+      {/* Gradient fade */}
+      <LinearGradient
+        colors={['#FFFFFF00', '#FFFFFF', '#FFFFFF']}
+        style={styles.gradient}
+        pointerEvents="none"
+      />
+
+      {/* Floating buttons */}
+      <View style={styles.floatingContainer}>
+        {state.routes.map((route, index) => {
+        const isFocused = state.index === index;
+
+        const onPress = () => {
+          const event = navigation.emit({
+            type: 'tabPress',
+            target: route.key,
+            canPreventDefault: true,
+          });
+
+          if (!isFocused && !event.defaultPrevented) {
+            navigation.navigate(route.name);
+          }
+        };
+
+        return (
+          <TouchableOpacity
+            key={route.key}
+            style={[styles.floatingButton, isFocused && styles.floatingButtonActive]}
+            onPress={onPress}
+            activeOpacity={0.8}
+          >
+            <FontAwesome5
+              name={icons[route.name]}
+              size={isFocused ? 20 : 18}
+              color={isFocused ? Colors.text.inverse : Colors.text.secondary}
+              solid
+            />
+          </TouchableOpacity>
+        );
+      })}
+      </View>
+    </>
+  );
+};
 
 const MainNavigator: React.FC = () => {
   return (
     <Tab.Navigator
+      tabBar={(props) => <FloatingTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        tabBarStyle: styles.tabBar,
-        tabBarShowLabel: false,
-        tabBarHideOnKeyboard: true,
       }}
     >
-      <Tab.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon icon="🏠" focused={focused} label="Accueil" />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Agenda"
-        component={AgendaScreen}
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon icon="📅" focused={focused} label="Agenda" />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Wallet"
-        component={WalletScreen}
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon icon="💰" focused={focused} label="Wallet" />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="History"
-        component={HistoryScreen}
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon icon="📋" focused={focused} label="Historique" />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Profile"
-        component={ProfileScreen}
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon icon="👤" focused={focused} label="Profil" />
-          ),
-        }}
-      />
+      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="History" component={HistoryScreen} />
+      <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
 };
 
 const styles = StyleSheet.create({
-  tabBar: {
+  gradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 130,
+  },
+  floatingContainer: {
+    position: 'absolute',
+    bottom: Platform.OS === 'ios' ? 30 : 20,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 50,
+  },
+  floatingButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: Colors.background.primary,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border.light,
-    height: 80,
-    paddingBottom: 20,
-    paddingTop: 10,
-  },
-  tabIconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 12,
   },
-  tabIcon: {
-    fontSize: 24,
-    marginBottom: 4,
-  },
-  tabIconFocused: {
-    transform: [{ scale: 1.1 }],
-  },
-  tabLabel: {
-    fontSize: 10,
-    color: Colors.text.tertiary,
-  },
-  tabLabelFocused: {
-    color: Colors.primary,
-    fontWeight: '600',
-  },
-  centerButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+  floatingButtonActive: {
     backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
+    transform: [{ scale: 1.1 }],
     shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  centerButtonText: {
-    fontSize: 32,
-    color: Colors.text.inverse,
-    fontWeight: '300',
-    marginTop: -2,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.45,
+    shadowRadius: 12,
+    elevation: 15,
   },
 });
 

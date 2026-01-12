@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
+import { Colors } from '../config/theme';
 import { storage } from '../utils/storage';
 import { authService } from '../services/authService';
 import type { PushNotification } from '../types';
@@ -58,10 +59,10 @@ export const useNotifications = (): UseNotificationsResult => {
 
     return () => {
       if (notificationListener.current) {
-        Notifications.removeNotificationSubscription(notificationListener.current);
+        notificationListener.current.remove();
       }
       if (responseListener.current) {
-        Notifications.removeNotificationSubscription(responseListener.current);
+        responseListener.current.remove();
       }
     };
   }, []);
@@ -122,7 +123,7 @@ export const useNotifications = (): UseNotificationsResult => {
           name: 'default',
           importance: Notifications.AndroidImportance.MAX,
           vibrationPattern: [0, 250, 250, 250],
-          lightColor: '#4cb04f',
+          lightColor: Colors.primary,
         });
       }
 

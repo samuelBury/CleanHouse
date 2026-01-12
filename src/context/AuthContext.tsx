@@ -66,6 +66,9 @@ interface AuthContextType extends AuthState {
   loginWithApple: (identityToken: string, fullName?: { givenName?: string; familyName?: string }) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   updateUser: (user: User) => void;
+  updateProfile: (data: { name?: string; phone?: string }) => Promise<{ success: boolean; error?: string }>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
+  deleteAccount: (password: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 // Create context
@@ -164,6 +167,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     dispatch({ type: 'UPDATE_USER', payload: user });
   };
 
+  const updateProfile = async (data: { name?: string; phone?: string }) => {
+    const result = await authService.updateProfile(data);
+    if (result.success && result.data) {
+      dispatch({ type: 'UPDATE_USER', payload: result.data });
+      return { success: true };
+    }
+    return { success: false, error: result.error };
+  };
+
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    const result = await authService.changePassword(currentPassword, newPassword);
+    if (result.success) {
+      return { success: true };
+    }
+    return { success: false, error: result.error };
+  };
+
+  const deleteAccount = async (password: string) => {
+    const result = await authService.deleteAccount(password);
+    if (result.success) {
+      dispatch({ type: 'LOGOUT' });
+      return { success: true };
+    }
+    return { success: false, error: result.error };
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -174,6 +203,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         loginWithApple,
         logout,
         updateUser,
+        updateProfile,
+        changePassword,
+        deleteAccount,
       }}
     >
       {children}

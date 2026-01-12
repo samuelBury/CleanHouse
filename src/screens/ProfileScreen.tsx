@@ -1,5 +1,5 @@
 // Écran Profil
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,20 +7,36 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { useBooking } from '../context/BookingContext';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '../config/theme';
+import PaymentMethodsModal from '../components/PaymentMethodsModal';
+import SavedLocationsModal from '../components/SavedLocationsModal';
+import SecurityModal from '../components/SecurityModal';
+import HelpSupportModal from '../components/HelpSupportModal';
+import TermsModal from '../components/TermsModal';
 
 const ProfileScreen: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, updateProfile } = useAuth();
   const { bookings } = useBooking();
+
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showPaymentMethods, setShowPaymentMethods] = useState(false);
+  const [showSavedLocations, setShowSavedLocations] = useState(false);
+  const [showSecurity, setShowSecurity] = useState(false);
+  const [showHelpSupport, setShowHelpSupport] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+  const [editName, setEditName] = useState(user?.name || '');
+  const [editPhone, setEditPhone] = useState(user?.phone || '');
 
   // Calculate stats
   const completedBookings = bookings.filter(b => b.status === 'completed');
   const totalHours = completedBookings.reduce((acc, b) => acc + b.duration, 0);
-  const totalSpent = completedBookings.reduce((acc, b) => acc + b.price, 0);
 
   const handleLogout = () => {
     Alert.alert(
@@ -33,14 +49,32 @@ const ProfileScreen: React.FC = () => {
     );
   };
 
+  const handleOpenEdit = () => {
+    setEditName(user?.name || '');
+    setEditPhone(user?.phone || '');
+    setShowEditModal(true);
+  };
+
+  const handleSaveProfile = async () => {
+    if (!editName.trim()) {
+      Alert.alert('Erreur', 'Le nom est requis');
+      return;
+    }
+    try {
+      await updateProfile({ name: editName.trim(), phone: editPhone.trim() });
+      setShowEditModal(false);
+      Alert.alert('Succès', 'Profil mis à jour');
+    } catch (error) {
+      Alert.alert('Erreur', 'Impossible de mettre à jour le profil');
+    }
+  };
+
   const menuItems = [
-    { icon: '👤', title: 'Modifier le profil', onPress: () => {} },
-    { icon: '🔔', title: 'Notifications', onPress: () => {} },
-    { icon: '💳', title: 'Moyens de paiement', onPress: () => {} },
-    { icon: '📍', title: 'Adresses enregistrées', onPress: () => {} },
-    { icon: '🔒', title: 'Sécurité', onPress: () => {} },
-    { icon: '❓', title: 'Aide et support', onPress: () => {} },
-    { icon: '📄', title: 'Conditions d\'utilisation', onPress: () => {} },
+    { icon: 'credit-card', title: 'Moyens de paiement', onPress: () => setShowPaymentMethods(true) },
+    { icon: 'map-marker-alt', title: 'Lieux enregistrés', onPress: () => setShowSavedLocations(true) },
+    { icon: 'lock', title: 'Sécurité', onPress: () => setShowSecurity(true) },
+    { icon: 'question-circle', title: 'Aide et support', onPress: () => setShowHelpSupport(true) },
+    { icon: 'file-alt', title: 'Conditions d\'utilisation', onPress: () => setShowTerms(true) },
   ];
 
   return (
@@ -65,7 +99,7 @@ const ProfileScreen: React.FC = () => {
               <Text style={styles.profilePhone}>{user.phone}</Text>
             )}
           </View>
-          <TouchableOpacity style={styles.editButton}>
+          <TouchableOpacity style={styles.editButton} onPress={handleOpenEdit}>
             <Text style={styles.editButtonText}>Modifier</Text>
           </TouchableOpacity>
         </View>
@@ -81,11 +115,6 @@ const ProfileScreen: React.FC = () => {
             <Text style={styles.statValue}>{totalHours}h</Text>
             <Text style={styles.statLabel}>Total heures</Text>
           </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{totalSpent}€</Text>
-            <Text style={styles.statLabel}>Dépensé</Text>
-          </View>
         </View>
 
         {/* Menu */}
@@ -96,16 +125,18 @@ const ProfileScreen: React.FC = () => {
               style={styles.menuItem}
               onPress={item.onPress}
             >
-              <Text style={styles.menuIcon}>{item.icon}</Text>
+              <View style={styles.menuIconContainer}>
+                <FontAwesome5 name={item.icon} size={18} color={Colors.primary} solid />
+              </View>
               <Text style={styles.menuTitle}>{item.title}</Text>
-              <Text style={styles.menuArrow}>›</Text>
+              <FontAwesome5 name="chevron-right" size={14} color={Colors.text.tertiary} />
             </TouchableOpacity>
           ))}
         </View>
 
         {/* Logout Button */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutIcon}>🚪</Text>
+          <FontAwesome5 name="sign-out-alt" size={18} color={Colors.status.error} style={styles.logoutIcon} />
           <Text style={styles.logoutText}>Se déconnecter</Text>
         </TouchableOpacity>
 
@@ -114,6 +145,83 @@ const ProfileScreen: React.FC = () => {
 
         <View style={styles.bottomPadding} />
       </ScrollView>
+
+      {/* Edit Profile Modal */}
+      <Modal
+        visible={showEditModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowEditModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Modifier le profil</Text>
+
+            <Text style={styles.inputLabel}>Nom</Text>
+            <TextInput
+              style={styles.input}
+              value={editName}
+              onChangeText={setEditName}
+              placeholder="Votre nom"
+              autoCapitalize="words"
+            />
+
+            <Text style={styles.inputLabel}>Téléphone</Text>
+            <TextInput
+              style={styles.input}
+              value={editPhone}
+              onChangeText={setEditPhone}
+              placeholder="Votre téléphone"
+              keyboardType="phone-pad"
+            />
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => setShowEditModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={handleSaveProfile}
+              >
+                <Text style={styles.saveButtonText}>Enregistrer</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Payment Methods Modal */}
+      <PaymentMethodsModal
+        visible={showPaymentMethods}
+        onClose={() => setShowPaymentMethods(false)}
+      />
+
+      {/* Saved Locations Modal */}
+      <SavedLocationsModal
+        visible={showSavedLocations}
+        onClose={() => setShowSavedLocations(false)}
+      />
+
+      {/* Security Modal */}
+      <SecurityModal
+        visible={showSecurity}
+        onClose={() => setShowSecurity(false)}
+      />
+
+      {/* Help & Support Modal */}
+      <HelpSupportModal
+        visible={showHelpSupport}
+        onClose={() => setShowHelpSupport(false)}
+      />
+
+      {/* Terms Modal */}
+      <TermsModal
+        visible={showTerms}
+        onClose={() => setShowTerms(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -226,18 +334,19 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border.light,
   },
-  menuIcon: {
-    fontSize: 20,
+  menuIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'Colors.primaryBackground',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginRight: Spacing.md,
   },
   menuTitle: {
     flex: 1,
     fontSize: Typography.sizes.lg,
     color: Colors.text.primary,
-  },
-  menuArrow: {
-    fontSize: 20,
-    color: Colors.text.tertiary,
   },
   logoutButton: {
     backgroundColor: Colors.background.primary,
@@ -251,7 +360,6 @@ const styles = StyleSheet.create({
     borderColor: Colors.status.error,
   },
   logoutIcon: {
-    fontSize: 20,
     marginRight: Spacing.sm,
   },
   logoutText: {
@@ -267,6 +375,70 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 100,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: Colors.background.primary,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.xl,
+    width: '85%',
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.bold,
+    color: Colors.text.primary,
+    marginBottom: Spacing.lg,
+    textAlign: 'center',
+  },
+  inputLabel: {
+    fontSize: Typography.sizes.sm,
+    color: Colors.text.secondary,
+    marginBottom: Spacing.xs,
+    marginTop: Spacing.md,
+  },
+  input: {
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    fontSize: Typography.sizes.md,
+    color: Colors.text.primary,
+    borderWidth: 1,
+    borderColor: Colors.border.light,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    marginTop: Spacing.xl,
+    gap: Spacing.md,
+  },
+  cancelButton: {
+    flex: 1,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.background.secondary,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    fontSize: Typography.sizes.md,
+    color: Colors.text.secondary,
+    fontWeight: Typography.weights.medium,
+  },
+  saveButton: {
+    flex: 1,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    fontSize: Typography.sizes.md,
+    color: Colors.text.inverse,
+    fontWeight: Typography.weights.medium,
   },
 });
 

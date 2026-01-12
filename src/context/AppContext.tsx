@@ -1,6 +1,6 @@
 // Context principal de l'application CleanHouse
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
-import type { WalletData, PaymentMethod, Transaction } from '../types';
+import type { PaymentMethod } from '../types';
 
 // State type
 interface AppState {
@@ -8,8 +8,8 @@ interface AppState {
   isLoading: boolean;
   error: string | null;
 
-  // Wallet
-  wallet: WalletData | null;
+  // Payment methods
+  paymentMethods: PaymentMethod[];
 
   // Modals
   activeModal: string | null;
@@ -22,11 +22,9 @@ interface AppState {
 type AppAction =
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
-  | { type: 'SET_WALLET'; payload: WalletData }
-  | { type: 'UPDATE_BALANCE'; payload: number }
-  | { type: 'ADD_TRANSACTION'; payload: Transaction }
   | { type: 'ADD_PAYMENT_METHOD'; payload: PaymentMethod }
   | { type: 'REMOVE_PAYMENT_METHOD'; payload: string }
+  | { type: 'SET_PAYMENT_METHODS'; payload: PaymentMethod[] }
   | { type: 'SET_ACTIVE_MODAL'; payload: string | null }
   | { type: 'TOGGLE_DARK_MODE' }
   | { type: 'RESET_STATE' };
@@ -35,7 +33,7 @@ type AppAction =
 const initialState: AppState = {
   isLoading: false,
   error: null,
-  wallet: null,
+  paymentMethods: [],
   activeModal: null,
   isDarkMode: false,
 };
@@ -47,47 +45,20 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       return { ...state, isLoading: action.payload };
     case 'SET_ERROR':
       return { ...state, error: action.payload };
-    case 'SET_WALLET':
-      return { ...state, wallet: action.payload };
-    case 'UPDATE_BALANCE':
-      return {
-        ...state,
-        wallet: state.wallet
-          ? { ...state.wallet, balance: action.payload }
-          : null,
-      };
-    case 'ADD_TRANSACTION':
-      return {
-        ...state,
-        wallet: state.wallet
-          ? {
-              ...state.wallet,
-              transactions: [action.payload, ...state.wallet.transactions],
-            }
-          : null,
-      };
     case 'ADD_PAYMENT_METHOD':
       return {
         ...state,
-        wallet: state.wallet
-          ? {
-              ...state.wallet,
-              paymentMethods: [...state.wallet.paymentMethods, action.payload],
-            }
-          : null,
+        paymentMethods: [...state.paymentMethods, action.payload],
       };
     case 'REMOVE_PAYMENT_METHOD':
       return {
         ...state,
-        wallet: state.wallet
-          ? {
-              ...state.wallet,
-              paymentMethods: state.wallet.paymentMethods.filter(
-                (pm) => pm.id !== action.payload
-              ),
-            }
-          : null,
+        paymentMethods: state.paymentMethods.filter(
+          (pm) => pm.id !== action.payload
+        ),
       };
+    case 'SET_PAYMENT_METHODS':
+      return { ...state, paymentMethods: action.payload };
     case 'SET_ACTIVE_MODAL':
       return { ...state, activeModal: action.payload };
     case 'TOGGLE_DARK_MODE':
@@ -103,11 +74,9 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
 interface AppContextType extends AppState {
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
-  setWallet: (wallet: WalletData) => void;
-  updateBalance: (balance: number) => void;
-  addTransaction: (transaction: Transaction) => void;
   addPaymentMethod: (method: PaymentMethod) => void;
   removePaymentMethod: (id: string) => void;
+  setPaymentMethods: (methods: PaymentMethod[]) => void;
   openModal: (modalName: string) => void;
   closeModal: () => void;
   toggleDarkMode: () => void;
@@ -129,24 +98,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     dispatch({ type: 'SET_ERROR', payload: error });
   };
 
-  const setWallet = (wallet: WalletData) => {
-    dispatch({ type: 'SET_WALLET', payload: wallet });
-  };
-
-  const updateBalance = (balance: number) => {
-    dispatch({ type: 'UPDATE_BALANCE', payload: balance });
-  };
-
-  const addTransaction = (transaction: Transaction) => {
-    dispatch({ type: 'ADD_TRANSACTION', payload: transaction });
-  };
-
   const addPaymentMethod = (method: PaymentMethod) => {
     dispatch({ type: 'ADD_PAYMENT_METHOD', payload: method });
   };
 
   const removePaymentMethod = (id: string) => {
     dispatch({ type: 'REMOVE_PAYMENT_METHOD', payload: id });
+  };
+
+  const setPaymentMethods = (methods: PaymentMethod[]) => {
+    dispatch({ type: 'SET_PAYMENT_METHODS', payload: methods });
   };
 
   const openModal = (modalName: string) => {
@@ -171,11 +132,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         ...state,
         setLoading,
         setError,
-        setWallet,
-        updateBalance,
-        addTransaction,
         addPaymentMethod,
         removePaymentMethod,
+        setPaymentMethods,
         openModal,
         closeModal,
         toggleDarkMode,

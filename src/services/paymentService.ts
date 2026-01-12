@@ -28,6 +28,20 @@ export const paymentService = {
     }
   },
 
+  // Payer avec une carte sauvegardée
+  async payWithSavedCard(paymentMethodId: string, amount: number, bookingId?: string): Promise<ApiResponse<{ paymentIntentId: string; status: string }>> {
+    try {
+      const response = await api.post('/payments/pay-with-saved-card', {
+        paymentMethodId,
+        amount,
+        bookingId,
+      });
+      return { success: true, data: response.data.data };
+    } catch (error) {
+      return { success: false, error: handleApiError(error) };
+    }
+  },
+
   // Get user's payment methods
   async getPaymentMethods(): Promise<ApiResponse<PaymentMethod[]>> {
     try {
@@ -89,6 +103,18 @@ export const paymentService = {
         reason,
       });
       return { success: true, data: response.data.data };
+    } catch (error) {
+      return { success: false, error: handleApiError(error) };
+    }
+  },
+
+  // Sauvegarder la carte utilisée lors d'un paiement
+  async saveCardFromPayment(paymentIntentId: string): Promise<ApiResponse<PaymentMethod>> {
+    try {
+      const response = await api.post('/payments/save-card', {
+        paymentIntentId,
+      });
+      return { success: true, data: response.data.data?.paymentMethod };
     } catch (error) {
       return { success: false, error: handleApiError(error) };
     }

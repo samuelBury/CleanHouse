@@ -18,10 +18,12 @@ model User {
   avatar                    String?
   googleId                  String?         @unique
   appleId                   String?         @unique
-  balance                   Float           @default(0)
+  stripeCustomerId          String?         @unique // Stripe Customer ID (cus_xxx)
   emailVerified             Boolean         @default(false)
   emailVerificationToken    String?
   emailVerificationExpires  DateTime?
+  passwordResetToken        String?
+  passwordResetExpires      DateTime?
   createdAt                 DateTime        @default(now())
   updatedAt                 DateTime        @updatedAt
 

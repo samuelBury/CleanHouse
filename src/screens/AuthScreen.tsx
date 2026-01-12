@@ -15,6 +15,9 @@ import {
   ImageBackground,
   Dimensions,
 } from 'react-native';
+import { FontAwesome5 } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Colors } from '../config/theme';
 import { useAuth } from '../context/AuthContext';
 import { validators, validationMessages } from '../utils/validators';
 import { formatters } from '../utils/formatters';
@@ -34,6 +37,10 @@ const AuthScreen: React.FC = () => {
   const [showVerificationMessage, setShowVerificationMessage] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState('');
   const [resendingEmail, setResendingEmail] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
+  const [forgotPasswordSent, setForgotPasswordSent] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -69,6 +76,28 @@ const AuthScreen: React.FC = () => {
       Alert.alert('Email envoyé', 'Un nouveau lien de vérification a été envoyé à votre adresse email.');
     } else {
       Alert.alert('Erreur', result.error || "Impossible d'envoyer l'email");
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!forgotPasswordEmail) {
+      Alert.alert('Erreur', 'Veuillez entrer votre adresse email');
+      return;
+    }
+
+    if (!validators.isValidEmail(forgotPasswordEmail)) {
+      Alert.alert('Erreur', validationMessages.email.invalid);
+      return;
+    }
+
+    setForgotPasswordLoading(true);
+    const result = await authService.forgotPassword(forgotPasswordEmail);
+    setForgotPasswordLoading(false);
+
+    if (result.success) {
+      setForgotPasswordSent(true);
+    } else {
+      Alert.alert('Erreur', result.error || "Impossible d'envoyer l'email de réinitialisation");
     }
   };
 
@@ -138,7 +167,7 @@ const AuthScreen: React.FC = () => {
           >
             {/* Logo et titre */}
             <View style={styles.headerSection}>
-              <Text style={styles.logoIcon}>✨</Text>
+              <FontAwesome5 name="magic" size={40} color="#FFD700" style={styles.logoIcon} />
               <Text style={styles.logoText}>CLEANHOME</Text>
               <Text style={styles.subtitle}>Services de ménage à Paris</Text>
             </View>
@@ -146,7 +175,7 @@ const AuthScreen: React.FC = () => {
             {/* Message de vérification email */}
             {showVerificationMessage ? (
               <View style={styles.verificationSection}>
-                <Text style={styles.verificationIcon}>📧</Text>
+                <FontAwesome5 name="envelope" size={60} color="#fff" style={styles.verificationIcon} />
                 <Text style={styles.verificationTitle}>Vérifiez votre email</Text>
                 <Text style={styles.verificationText}>
                   Un email de vérification a été envoyé à{'\n'}
@@ -178,6 +207,85 @@ const AuthScreen: React.FC = () => {
                   <Text style={styles.backToLoginText}>Retour à la connexion</Text>
                 </TouchableOpacity>
               </View>
+            ) : showForgotPassword ? (
+              /* Formulaire mot de passe oublié */
+              <View style={styles.verificationSection}>
+                {forgotPasswordSent ? (
+                  <>
+                    <FontAwesome5 name="check-circle" size={60} color="#4CAF50" style={styles.verificationIcon} />
+                    <Text style={styles.verificationTitle}>Email envoyé !</Text>
+                    <Text style={styles.verificationText}>
+                      Un email de réinitialisation a été envoyé à{'\n'}
+                      <Text style={styles.verificationEmail}>{forgotPasswordEmail}</Text>
+                    </Text>
+                    <Text style={styles.verificationSubtext}>
+                      Cliquez sur le lien dans l'email pour réinitialiser votre mot de passe.
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.backToLoginButton}
+                      onPress={() => {
+                        setShowForgotPassword(false);
+                        setForgotPasswordSent(false);
+                        setForgotPasswordEmail('');
+                      }}
+                    >
+                      <Text style={styles.backToLoginText}>Retour à la connexion</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <>
+                    <FontAwesome5 name="key" size={60} color="#fff" style={styles.verificationIcon} />
+                    <Text style={styles.verificationTitle}>Mot de passe oublié</Text>
+                    <Text style={styles.verificationSubtext}>
+                      Entrez votre adresse email pour recevoir un lien de réinitialisation.
+                    </Text>
+
+                    <View style={[styles.inputContainer, { width: '100%', marginTop: 20 }]}>
+                      <FontAwesome5 name="envelope" size={18} color="rgba(255,255,255,0.7)" style={styles.inputIcon} />
+                      <TextInput
+                        style={styles.input}
+                        placeholder="exemple@email.com"
+                        placeholderTextColor="rgba(255,255,255,0.5)"
+                        value={forgotPasswordEmail}
+                        onChangeText={setForgotPasswordEmail}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                      />
+                    </View>
+
+                    <TouchableOpacity
+                      onPress={handleForgotPassword}
+                      disabled={forgotPasswordLoading}
+                      activeOpacity={0.8}
+                      style={[styles.primaryButtonContainer, { width: '100%', marginTop: 16 }]}
+                    >
+                      <LinearGradient
+                        colors={Colors.gradient}
+                        start={{x: 0, y: 0}}
+                        end={{x: 1, y: 1}}
+                        style={[styles.primaryButton, forgotPasswordLoading && styles.buttonDisabled]}
+                      >
+                        {forgotPasswordLoading ? (
+                          <ActivityIndicator color="#fff" />
+                        ) : (
+                          <Text style={styles.primaryButtonText}>ENVOYER</Text>
+                        )}
+                      </LinearGradient>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={styles.backToLoginButton}
+                      onPress={() => {
+                        setShowForgotPassword(false);
+                        setForgotPasswordEmail('');
+                      }}
+                    >
+                      <Text style={styles.backToLoginText}>Retour à la connexion</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </View>
             ) : (
             /* Formulaire */
             <View style={styles.formSection}>
@@ -185,7 +293,7 @@ const AuthScreen: React.FC = () => {
               {!isLogin && (
                 <>
                   <View style={styles.inputContainer}>
-                    <Text style={styles.inputIcon}>👤</Text>
+                    <FontAwesome5 name="user" size={18} color="rgba(255,255,255,0.7)" style={styles.inputIcon} />
                     <TextInput
                       style={styles.input}
                       placeholder="Nom complet"
@@ -197,7 +305,7 @@ const AuthScreen: React.FC = () => {
                   </View>
 
                   <View style={styles.inputContainer}>
-                    <Text style={styles.inputIcon}>📱</Text>
+                    <FontAwesome5 name="mobile-alt" size={18} color="rgba(255,255,255,0.7)" style={styles.inputIcon} />
                     <TextInput
                       style={styles.input}
                       placeholder="Téléphone"
@@ -212,7 +320,7 @@ const AuthScreen: React.FC = () => {
 
               {/* Email */}
               <View style={styles.inputContainer}>
-                <Text style={styles.inputIcon}>📧</Text>
+                <FontAwesome5 name="envelope" size={18} color="rgba(255,255,255,0.7)" style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder="exemple@email.com"
@@ -227,7 +335,7 @@ const AuthScreen: React.FC = () => {
 
               {/* Mot de passe */}
               <View style={styles.inputContainer}>
-                <Text style={styles.inputIcon}>🔒</Text>
+                <FontAwesome5 name="lock" size={18} color="rgba(255,255,255,0.7)" style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   placeholder="••••••••••"
@@ -245,7 +353,7 @@ const AuthScreen: React.FC = () => {
               {/* Confirmation mot de passe (inscription) */}
               {!isLogin && (
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputIcon}>🔒</Text>
+                  <FontAwesome5 name="lock" size={18} color="rgba(255,255,255,0.7)" style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     placeholder="Confirmer le mot de passe"
@@ -263,23 +371,33 @@ const AuthScreen: React.FC = () => {
 
               {/* Bouton principal */}
               <TouchableOpacity
-                style={[styles.primaryButton, isLoading && styles.buttonDisabled]}
                 onPress={isLogin ? handleLogin : handleRegister}
                 disabled={isLoading}
                 activeOpacity={0.8}
+                style={styles.primaryButtonContainer}
               >
-                {isLoading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.primaryButtonText}>
-                    {isLogin ? 'SE CONNECTER' : "S'INSCRIRE"}
-                  </Text>
-                )}
+                <LinearGradient
+                  colors={Colors.gradient}
+                  start={{x: 0, y: 0}}
+                  end={{x: 1, y: 1}}
+                  style={[styles.primaryButton, isLoading && styles.buttonDisabled]}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.primaryButtonText}>
+                      {isLogin ? 'SE CONNECTER' : "S'INSCRIRE"}
+                    </Text>
+                  )}
+                </LinearGradient>
               </TouchableOpacity>
 
               {/* Mot de passe oublié */}
               {isLogin && (
-                <TouchableOpacity style={styles.forgotPassword}>
+                <TouchableOpacity
+                  style={styles.forgotPassword}
+                  onPress={() => setShowForgotPassword(true)}
+                >
                   <Text style={styles.forgotPasswordText}>Mot de passe oublié ?</Text>
                 </TouchableOpacity>
               )}
@@ -361,7 +479,6 @@ const styles = StyleSheet.create({
     marginBottom: 50,
   },
   logoIcon: {
-    fontSize: 40,
     marginBottom: 16,
   },
   logoText: {
@@ -389,7 +506,6 @@ const styles = StyleSheet.create({
     height: 56,
   },
   inputIcon: {
-    fontSize: 18,
     marginRight: 12,
   },
   input: {
@@ -398,18 +514,21 @@ const styles = StyleSheet.create({
     color: '#fff',
     height: '100%',
   },
+  primaryButtonContainer: {
+    marginTop: 8,
+    borderRadius: 30,
+    overflow: 'hidden',
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 6,
+  },
   primaryButton: {
-    backgroundColor: '#4cb04f',
     borderRadius: 30,
     height: 56,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 8,
-    shadowColor: '#4cb04f',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
   },
   buttonDisabled: {
     opacity: 0.7,
@@ -499,7 +618,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   switchLink: {
-    color: '#4cb04f',
+    color: 'Colors.primaryLight',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -508,7 +627,6 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   verificationIcon: {
-    fontSize: 60,
     marginBottom: 20,
   },
   verificationTitle: {
@@ -525,7 +643,7 @@ const styles = StyleSheet.create({
   },
   verificationEmail: {
     fontWeight: 'bold',
-    color: '#4cb04f',
+    color: 'Colors.primaryLight',
   },
   verificationSubtext: {
     fontSize: 14,
@@ -534,7 +652,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   resendButton: {
-    backgroundColor: '#4cb04f',
+    backgroundColor: 'Colors.primary',
     paddingHorizontal: 32,
     paddingVertical: 14,
     borderRadius: 25,

@@ -2,13 +2,61 @@
 import api, { handleApiError } from './api';
 import type { Booking, CreateBookingData, ApiResponse } from '../types';
 
+// Convertir le nom de service frontend vers l'enum backend
+const convertServiceToBackend = (service: string): string => {
+  switch (service) {
+    case 'Ménage':
+      return 'MENAGE';
+    case 'Repassage':
+      return 'REPASSAGE';
+    case 'Ménage + Repassage':
+      return 'MENAGE_REPASSAGE';
+    default:
+      return service;
+  }
+};
+
+// Convertir la date DD/MM/YYYY vers ISO8601
+const convertDateToISO = (dateStr: string): string => {
+  // Si c'est déjà ISO, retourner tel quel
+  if (dateStr.includes('T') || dateStr.includes('-')) {
+    return dateStr;
+  }
+  // Sinon convertir DD/MM/YYYY
+  const [day, month, year] = dateStr.split('/').map(Number);
+  return new Date(year, month - 1, day).toISOString();
+};
+
+// Convertir l'enum backend vers le nom frontend
+const convertServiceToFrontend = (service: string): string => {
+  switch (service) {
+    case 'MENAGE':
+      return 'Ménage';
+    case 'REPASSAGE':
+      return 'Repassage';
+    case 'MENAGE_REPASSAGE':
+      return 'Ménage + Repassage';
+    default:
+      return service;
+  }
+};
+
+// Convertir un booking backend vers frontend
+const convertBookingToFrontend = (booking: any): any => ({
+  ...booking,
+  service: convertServiceToFrontend(booking.service),
+});
+
 export const bookingService = {
   // Get all bookings for current user
   async getBookings(): Promise<ApiResponse<Booking[]>> {
     try {
       const response = await api.get('/bookings');
       const bookings = response.data?.data?.bookings || response.data?.data || [];
-      return { success: true, data: Array.isArray(bookings) ? bookings : [] };
+      const convertedBookings = Array.isArray(bookings)
+        ? bookings.map(convertBookingToFrontend)
+        : [];
+      return { success: true, data: convertedBookings };
     } catch (error) {
       return { success: false, error: handleApiError(error), data: [] };
     }
@@ -27,8 +75,15 @@ export const bookingService = {
   // Create new booking
   async createBooking(data: CreateBookingData): Promise<ApiResponse<Booking>> {
     try {
-      const response = await api.post('/bookings', data);
-      return { success: true, data: response.data.data };
+      // Convertir les données pour le backend
+      const backendData = {
+        ...data,
+        service: convertServiceToBackend(data.service),
+        date: convertDateToISO(data.date),
+      };
+      const response = await api.post('/bookings', backendData);
+      const booking = response.data?.data?.booking || response.data?.data;
+      return { success: true, data: convertBookingToFrontend(booking) };
     } catch (error) {
       return { success: false, error: handleApiError(error) };
     }

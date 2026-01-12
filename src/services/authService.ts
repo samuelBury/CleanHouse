@@ -65,6 +65,16 @@ export const authService = {
     }
   },
 
+  // Forgot password - request reset email
+  async forgotPassword(email: string): Promise<ApiResponse<void>> {
+    try {
+      const response = await api.post('/auth/forgot-password', { email });
+      return { success: true, message: response.data.message };
+    } catch (error) {
+      return { success: false, error: handleApiError(error) };
+    }
+  },
+
   // Login with Google
   async loginWithGoogle(idToken: string): Promise<ApiResponse<AuthResponse>> {
     try {
@@ -177,6 +187,39 @@ export const authService = {
     try {
       await api.put('/users/me/push-token', { pushToken });
       await storage.setPushToken(pushToken);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: handleApiError(error) };
+    }
+  },
+
+  // Update user profile
+  async updateProfile(data: { name?: string; phone?: string }): Promise<ApiResponse<User>> {
+    try {
+      const response = await api.put('/users/me', data);
+      const user = response.data.data.user;
+      await storage.setUserData(user);
+      return { success: true, data: user };
+    } catch (error) {
+      return { success: false, error: handleApiError(error) };
+    }
+  },
+
+  // Change password
+  async changePassword(currentPassword: string, newPassword: string): Promise<ApiResponse<void>> {
+    try {
+      await api.put('/users/me/password', { currentPassword, newPassword });
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: handleApiError(error) };
+    }
+  },
+
+  // Delete account
+  async deleteAccount(password: string): Promise<ApiResponse<void>> {
+    try {
+      await api.delete('/users/me', { data: { password } });
+      await storage.clearAuth();
       return { success: true };
     } catch (error) {
       return { success: false, error: handleApiError(error) };

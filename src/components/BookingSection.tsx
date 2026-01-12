@@ -1,13 +1,15 @@
 import React from 'react';
 import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
+import {FontAwesome5} from '@expo/vector-icons';
 import {Colors} from '../config/theme';
 import type {Booking} from '../types';
 
 interface BookingSectionProps {
   reservations: Booking[];
+  onBookingPress?: (booking: Booking) => void;
 }
 
-export default function BookingSection({reservations = []}: BookingSectionProps) {
+export default function BookingSection({reservations = [], onBookingPress}: BookingSectionProps) {
   const formatDate = (date: string, time: string, duration: number) => {
     const d = new Date(date);
     const day = d.getDate();
@@ -26,7 +28,7 @@ export default function BookingSection({reservations = []}: BookingSectionProps)
           <View key={booking.id} style={styles.bookingCard}>
             <View style={styles.bookingHeader}>
               <Text style={styles.bookingTitle}>{booking.service}</Text>
-              <TouchableOpacity style={styles.confirmButton}>
+              <TouchableOpacity style={styles.confirmButton} onPress={() => onBookingPress?.(booking)}>
                 <Text style={styles.confirmButtonText}>Voir</Text>
               </TouchableOpacity>
             </View>
@@ -40,7 +42,7 @@ export default function BookingSection({reservations = []}: BookingSectionProps)
       {/* Promo Section */}
       <View style={styles.employeeSection}>
         <View style={styles.firstBookingCard}>
-          <Text style={styles.firstBookingIcon}>📱</Text>
+          <FontAwesome5 name="mobile-alt" size={28} color={Colors.secondary} style={styles.firstBookingIcon} />
           <View style={styles.firstBookingContent}>
             <Text style={styles.firstBookingTitle}>Première réservation ?</Text>
             <Text style={styles.firstBookingSubtitle}>
@@ -84,7 +86,7 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
   },
   confirmButton: {
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.secondary,
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderRadius: 20,
@@ -105,14 +107,13 @@ const styles = StyleSheet.create({
   firstBookingCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF3E0',
+    backgroundColor: Colors.secondaryBackground,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#FFE0B2',
+    borderColor: Colors.secondaryPastel,
   },
   firstBookingIcon: {
-    fontSize: 28,
     marginRight: 12,
   },
   firstBookingContent: {
@@ -134,12 +135,12 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#FFE0B2',
+    borderColor: Colors.secondaryPastel,
   },
   promoCodeText: {
     fontSize: 14,
     fontWeight: '700',
-    color: Colors.status.warning,
+    color: Colors.secondary,
     letterSpacing: 0.5,
   },
 });

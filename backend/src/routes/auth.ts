@@ -10,6 +10,9 @@ import {
   checkAuth,
   verifyEmail,
   resendVerification,
+  forgotPassword,
+  resetPassword,
+  resetPasswordPage,
 } from '../controllers/authController';
 import { authenticate } from '../middleware/auth';
 import {
@@ -30,6 +33,9 @@ router.post('/refresh', refreshToken);
 router.post('/logout', logout);
 router.get('/verify-email', verifyEmail);
 router.post('/resend-verification', resendVerification);
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password', resetPassword);
+router.get('/reset-password', resetPasswordPage);
 
 // Routes protégées
 router.get('/check', authenticate, checkAuth);

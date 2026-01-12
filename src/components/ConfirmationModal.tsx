@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Animated,
 } from 'react-native';
+import {FontAwesome5} from '@expo/vector-icons';
 import {Colors} from '../config/theme';
 
 interface ConfirmationModalProps {
@@ -17,6 +18,8 @@ interface ConfirmationModalProps {
   date: string;
   time: string;
   payment: string;
+  mode?: 'booking' | 'payment';
+  isIndeterminate?: boolean;
 }
 
 export default function ConfirmationModal({
@@ -27,14 +30,17 @@ export default function ConfirmationModal({
   date,
   time,
   payment,
+  mode = 'booking',
+  isIndeterminate = false,
 }: ConfirmationModalProps) {
+  const isPaymentMode = mode === 'payment';
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const pingScale = useRef(new Animated.Value(1)).current;
   const pingOpacity = useRef(new Animated.Value(0.2)).current;
 
   useEffect(() => {
-    if (visible) {
-      // Animation de pulsation d'opacité (animate-pulse)
+    if (visible && !isPaymentMode) {
+      // Animation de pulsation d'opacité (animate-pulse) - seulement en mode booking
       Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
@@ -80,7 +86,7 @@ export default function ConfirmationModal({
         ])
       ).start();
     }
-  }, [visible, pulseAnim, pingScale, pingOpacity]);
+  }, [visible, pulseAnim, pingScale, pingOpacity, isPaymentMode]);
 
   return (
     <Modal
@@ -93,33 +99,40 @@ export default function ConfirmationModal({
         <View style={styles.modalContent}>
           {/* Success Icon */}
           <View style={styles.iconContainer}>
-            {/* Ping circle (background) */}
-            <Animated.View
-              style={[
-                styles.pingCircle,
-                {
-                  transform: [{scale: pingScale}],
-                  opacity: pingOpacity,
-                },
-              ]}
-            />
+            {/* Ping circle (background) - seulement en mode booking */}
+            {!isPaymentMode && (
+              <Animated.View
+                style={[
+                  styles.pingCircle,
+                  {
+                    transform: [{scale: pingScale}],
+                    opacity: pingOpacity,
+                  },
+                ]}
+              />
+            )}
             {/* Main circle with gradient effect and pulse */}
             <Animated.View
               style={[
                 styles.iconCircle,
+                isPaymentMode && styles.iconCircleSuccess,
                 {
-                  opacity: pulseAnim,
+                  opacity: isPaymentMode ? 1 : pulseAnim,
                 },
               ]}
             >
-              <Text style={styles.iconText}>🔍</Text>
+              <FontAwesome5 name={isPaymentMode ? 'check' : 'search'} size={50} color="#fff" />
             </Animated.View>
           </View>
 
           {/* Title */}
-          <Text style={styles.title}>Réservation confirmée !</Text>
+          <Text style={styles.title}>
+            {isPaymentMode ? 'Paiement réussi !' : 'Réservation confirmée !'}
+          </Text>
           <Text style={styles.subtitle}>
-            En attente de trouver un professionnel...
+            {isPaymentMode
+              ? 'Votre paiement a été traité avec succès'
+              : 'En attente de trouver un professionnel...'}
           </Text>
 
           {/* Reservation Details */}
@@ -131,7 +144,9 @@ export default function ConfirmationModal({
 
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Durée</Text>
-              <Text style={styles.detailValue}>{duration}h</Text>
+              <Text style={styles.detailValue}>
+                {isIndeterminate ? 'Indéterminée' : `${duration}h`}
+              </Text>
             </View>
 
             <View style={styles.detailRow}>
@@ -145,15 +160,19 @@ export default function ConfirmationModal({
             </View>
 
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Paiement</Text>
-              <Text style={styles.detailValue}>{payment}</Text>
+              <Text style={styles.detailLabel}>{isPaymentMode ? 'Montant' : 'Paiement'}</Text>
+              <Text style={[styles.detailValue, isPaymentMode && styles.paymentAmount]}>
+                {payment}
+              </Text>
             </View>
           </View>
 
           {/* Confirm Button */}
           <TouchableOpacity style={styles.confirmButton} onPress={onClose}>
-            <Text style={styles.confirmIcon}>✓</Text>
-            <Text style={styles.confirmButtonText}>Compris</Text>
+            <FontAwesome5 name="check" size={20} color={Colors.text.inverse} style={styles.confirmIcon} />
+            <Text style={styles.confirmButtonText}>
+              {isPaymentMode ? 'Continuer' : 'Compris'}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -200,8 +219,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  iconCircleSuccess: {
+    backgroundColor: Colors.primaryLight,
+  },
   iconText: {
-    fontSize: 50,
   },
   title: {
     fontSize: 22,
@@ -237,6 +258,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.text.primary,
   },
+  paymentAmount: {
+    color: Colors.primaryLight,
+    fontWeight: 'bold',
+  },
   confirmButton: {
     backgroundColor: Colors.primary,
     borderRadius: 12,
@@ -248,8 +273,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   confirmIcon: {
-    fontSize: 20,
-    color: Colors.text.inverse,
     marginRight: 8,
   },
   confirmButtonText: {

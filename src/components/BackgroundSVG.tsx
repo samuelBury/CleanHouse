@@ -9,7 +9,7 @@ interface BackgroundSVGProps {
 
 const BackgroundSVG: React.FC<BackgroundSVGProps> = () => {
   return (
-    <Svg style={styles.background} width="100%" height="100%" viewBox="0 0 525 982" preserveAspectRatio="xMidYMid slice">
+    <Svg style={styles.background} width="100%" height="100%" viewBox="60 100 400 750" preserveAspectRatio="xMidYMid slice">
       <Defs>
         <LinearGradient id="linear-gradient" x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor="#e8f5ff" />
@@ -24,7 +24,7 @@ const BackgroundSVG: React.FC<BackgroundSVGProps> = () => {
         <Circle cx="100" cy="100" r="100" fill="#ffe5d9" opacity="0.6" />
       </G>
       <G transform="translate(0, 325)">
-        <Circle cx="75" cy="75" r="75" fill="#c5f2d8" opacity="0.6" />
+        <Circle cx="75" cy="75" r="75" fill="Colors.primaryPastel" opacity="0.6" />
       </G>
       <G transform="translate(345, 610)">
         <Circle cx="90" cy="90" r="90" fill="#ffe5d9" opacity="0.6" />

@@ -5,12 +5,8 @@ import prisma from '../config/database';
 import { asyncHandler, createError } from '../middleware/errorHandler';
 import Stripe from 'stripe';
 
-// Créer un PaymentIntent
-export const createPaymentIntent = asyncHandler(async (req: Request, res: Response) => {
-  const userId = req.user!.id;
-  const { bookingId, amount } = req.body;
-
-  // Récupérer l'utilisateur pour Stripe Customer
+// Helper pour obtenir ou créer un Stripe Customer
+const getOrCreateStripeCustomer = async (userId: string): Promise<string> => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
   });
@@ -19,35 +15,42 @@ export const createPaymentIntent = asyncHandler(async (req: Request, res: Respon
     throw createError('Utilisateur non trouvé', 404);
   }
 
-  // Créer ou récupérer le Stripe Customer
-  let customerId: string | undefined;
+  // Si l'utilisateur a déjà un stripeCustomerId, le retourner
+  if (user.stripeCustomerId) {
+    return user.stripeCustomerId;
+  }
 
-  // Chercher si un customer Stripe existe déjà via un PaymentMethod
-  const existingMethod = await prisma.paymentMethod.findFirst({
-    where: { userId },
+  // Sinon, créer un nouveau customer Stripe
+  const customer = await stripe.customers.create({
+    email: user.email,
+    name: user.name,
+    metadata: { userId },
   });
 
-  if (existingMethod) {
-    // Récupérer le customer depuis le PaymentMethod Stripe
-    const stripeMethod = await stripe.paymentMethods.retrieve(existingMethod.stripeId);
-    customerId = stripeMethod.customer as string;
-  }
+  // Sauvegarder le customerId
+  await prisma.user.update({
+    where: { id: userId },
+    data: { stripeCustomerId: customer.id },
+  });
 
-  if (!customerId) {
-    // Créer un nouveau customer
-    const customer = await stripe.customers.create({
-      email: user.email,
-      name: user.name,
-      metadata: { userId },
-    });
-    customerId = customer.id;
-  }
+  return customer.id;
+};
+
+// Créer un PaymentIntent
+export const createPaymentIntent = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user!.id;
+  const { bookingId, amount } = req.body;
+
+  // Obtenir ou créer le Stripe Customer
+  const customerId = await getOrCreateStripeCustomer(userId);
 
   // Créer le PaymentIntent
   const paymentIntent = await stripe.paymentIntents.create({
     amount, // En centimes
     currency: 'eur',
     customer: customerId,
+    // Permettre la sauvegarde de la carte pour usage futur
+    setup_future_usage: 'off_session',
     metadata: {
       userId,
       bookingId: bookingId || '',
@@ -64,6 +67,55 @@ export const createPaymentIntent = asyncHandler(async (req: Request, res: Respon
       paymentIntentId: paymentIntent.id,
     },
   });
+});
+
+// Payer avec une carte sauvegardée
+export const payWithSavedCard = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user!.id;
+  const { paymentMethodId, amount, bookingId } = req.body;
+
+  if (!paymentMethodId || !amount) {
+    throw createError('PaymentMethod ID et montant requis', 400);
+  }
+
+  // Vérifier que la carte appartient à l'utilisateur
+  const savedCard = await prisma.paymentMethod.findFirst({
+    where: { stripeId: paymentMethodId, userId },
+  });
+
+  if (!savedCard) {
+    throw createError('Carte non trouvée', 404);
+  }
+
+  // Obtenir le customer Stripe
+  const customerId = await getOrCreateStripeCustomer(userId);
+
+  // Créer et confirmer le PaymentIntent en une seule étape
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount,
+    currency: 'eur',
+    customer: customerId,
+    payment_method: paymentMethodId,
+    off_session: true,
+    confirm: true,
+    metadata: {
+      userId,
+      bookingId: bookingId || '',
+    },
+  });
+
+  if (paymentIntent.status === 'succeeded') {
+    res.json({
+      success: true,
+      data: {
+        paymentIntentId: paymentIntent.id,
+        status: paymentIntent.status,
+      },
+      message: 'Paiement réussi',
+    });
+  } else {
+    throw createError(`Paiement échoué: ${paymentIntent.status}`, 400);
+  }
 });
 
 // Confirmer un paiement (après webhook ou confirmation frontend)
@@ -95,12 +147,6 @@ export const confirmPayment = asyncHandler(async (req: Request, res: Response) =
     },
   });
 
-  // Mettre à jour le solde de l'utilisateur
-  await prisma.user.update({
-    where: { id: userId },
-    data: { balance: { decrement: paymentIntent.amount / 100 } },
-  });
-
   res.json({
     success: true,
     data: { transaction },
@@ -128,11 +174,44 @@ export const addPaymentMethod = asyncHandler(async (req: Request, res: Response)
   const userId = req.user!.id;
   const { paymentMethodId, isDefault = false } = req.body;
 
-  // Récupérer les détails du PaymentMethod depuis Stripe
-  const stripeMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
+  // Obtenir ou créer le Stripe Customer
+  const customerId = await getOrCreateStripeCustomer(userId);
 
-  if (!stripeMethod.card) {
+  // Récupérer les détails de la carte depuis Stripe d'abord
+  const stripeMethodDetails = await stripe.paymentMethods.retrieve(paymentMethodId);
+
+  if (!stripeMethodDetails.card) {
     throw createError('Méthode de paiement invalide', 400);
+  }
+
+  // Vérifier si une carte identique existe déjà (même last4, brand, expiration)
+  const existingCard = await prisma.paymentMethod.findFirst({
+    where: {
+      userId,
+      last4: stripeMethodDetails.card.last4,
+      brand: stripeMethodDetails.card.brand,
+      expMonth: stripeMethodDetails.card.exp_month,
+      expYear: stripeMethodDetails.card.exp_year,
+    },
+  });
+
+  if (existingCard) {
+    throw createError('Cette carte est déjà enregistrée', 400);
+  }
+
+  // Attacher le PaymentMethod au Customer Stripe
+  let stripeMethod: Stripe.PaymentMethod;
+  try {
+    stripeMethod = await stripe.paymentMethods.attach(paymentMethodId, {
+      customer: customerId,
+    });
+  } catch (error: any) {
+    // Si déjà attaché, récupérer les infos
+    if (error.code === 'resource_already_exists') {
+      stripeMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
+    } else {
+      throw createError(error.message || 'Erreur lors de l\'attachement de la carte', 400);
+    }
   }
 
   // Si c'est la méthode par défaut, retirer le statut des autres
@@ -141,11 +220,27 @@ export const addPaymentMethod = asyncHandler(async (req: Request, res: Response)
       where: { userId },
       data: { isDefault: false },
     });
+
+    // Définir comme méthode par défaut sur Stripe aussi
+    await stripe.customers.update(customerId, {
+      invoice_settings: {
+        default_payment_method: paymentMethodId,
+      },
+    });
   }
 
   // Vérifier si c'est la première méthode (sera par défaut)
   const existingMethods = await prisma.paymentMethod.count({ where: { userId } });
   const shouldBeDefault = isDefault || existingMethods === 0;
+
+  if (shouldBeDefault && existingMethods === 0) {
+    // Première carte = carte par défaut sur Stripe
+    await stripe.customers.update(customerId, {
+      invoice_settings: {
+        default_payment_method: paymentMethodId,
+      },
+    });
+  }
 
   // Créer la méthode de paiement en base
   const paymentMethod = await prisma.paymentMethod.create({
@@ -164,6 +259,7 @@ export const addPaymentMethod = asyncHandler(async (req: Request, res: Response)
   res.status(201).json({
     success: true,
     data: { paymentMethod },
+    message: 'Carte enregistrée avec succès',
   });
 });
 
@@ -242,6 +338,94 @@ export const setDefaultPaymentMethod = asyncHandler(async (req: Request, res: Re
   res.json({
     success: true,
     message: 'Méthode de paiement par défaut mise à jour',
+  });
+});
+
+// Sauvegarder la carte utilisée lors d'un paiement
+export const saveCardFromPayment = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user!.id;
+  const { paymentIntentId } = req.body;
+
+  if (!paymentIntentId) {
+    throw createError('PaymentIntent ID requis', 400);
+  }
+
+  // Récupérer le PaymentIntent depuis Stripe
+  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+  if (paymentIntent.status !== 'succeeded') {
+    throw createError('Le paiement n\'a pas été complété', 400);
+  }
+
+  // Vérifier que le paiement appartient à l'utilisateur
+  if (paymentIntent.metadata.userId !== userId) {
+    throw createError('Paiement non autorisé', 403);
+  }
+
+  const paymentMethodId = paymentIntent.payment_method as string;
+
+  if (!paymentMethodId) {
+    throw createError('Aucune méthode de paiement trouvée', 400);
+  }
+
+  // Récupérer les détails de la carte
+  const stripeMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
+
+  if (!stripeMethod.card) {
+    throw createError('Méthode de paiement invalide', 400);
+  }
+
+  // Vérifier si une carte identique existe déjà (même last4, brand, expiration)
+  const existingCard = await prisma.paymentMethod.findFirst({
+    where: {
+      userId,
+      last4: stripeMethod.card.last4,
+      brand: stripeMethod.card.brand,
+      expMonth: stripeMethod.card.exp_month,
+      expYear: stripeMethod.card.exp_year,
+    },
+  });
+
+  if (existingCard) {
+    return res.json({
+      success: true,
+      data: { paymentMethod: existingCard },
+      message: 'Cette carte est déjà enregistrée',
+    });
+  }
+
+  // Vérifier si c'est la première méthode (sera par défaut)
+  const existingMethods = await prisma.paymentMethod.count({ where: { userId } });
+  const shouldBeDefault = existingMethods === 0;
+
+  // Créer la méthode de paiement en base
+  const paymentMethod = await prisma.paymentMethod.create({
+    data: {
+      userId,
+      stripeId: paymentMethodId,
+      type: 'card',
+      last4: stripeMethod.card.last4,
+      brand: stripeMethod.card.brand,
+      expMonth: stripeMethod.card.exp_month,
+      expYear: stripeMethod.card.exp_year,
+      isDefault: shouldBeDefault,
+    },
+  });
+
+  // Si c'est la première carte, la définir comme défaut sur Stripe
+  if (shouldBeDefault) {
+    const customerId = await getOrCreateStripeCustomer(userId);
+    await stripe.customers.update(customerId, {
+      invoice_settings: {
+        default_payment_method: paymentMethodId,
+      },
+    });
+  }
+
+  res.status(201).json({
+    success: true,
+    data: { paymentMethod },
+    message: 'Carte enregistrée avec succès',
   });
 });
 

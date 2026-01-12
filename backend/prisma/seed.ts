@@ -18,7 +18,6 @@ async function main() {
       password: hashedPassword,
       name: 'Jean Test',
       phone: '0612345678',
-      balance: 100.00,
     },
   });
 
