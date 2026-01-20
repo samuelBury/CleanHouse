@@ -22,6 +22,18 @@ const getRandomProfessional = (): string => {
   return PROFESSIONALS[Math.floor(Math.random() * PROFESSIONALS.length)];
 };
 
+// Tarifs horaires pour les pros (ce qu'ils gagnent en euros)
+const PRO_HOURLY_RATES: Record<string, number> = {
+  MENAGE: 15,
+  REPASSAGE: 12,
+  MENAGE_REPASSAGE: 20,
+};
+
+// Calculer le gain du pro
+const calculateProEarning = (service: ServiceType, duration: number): number => {
+  return PRO_HOURLY_RATES[service] * duration;
+};
+
 // Calculer le prix
 const calculatePrice = (service: ServiceType, duration: number): number => {
   const basePrice = SERVICE_PRICES[service];
@@ -106,13 +118,13 @@ export const createBooking = asyncHandler(async (req: Request, res: Response) =>
   // Calculer le prix
   const price = calculatePrice(service as ServiceType, duration);
 
-  // Assigner un professionnel simulé
-  const professional = getRandomProfessional();
+  // Calculer le gain du pro
+  const proEarning = calculateProEarning(service as ServiceType, duration);
 
   // Parser la date correctement (DD/MM/YYYY)
   const parsedDate = parseDateDDMMYYYY(date);
 
-  // Créer la réservation
+  // Créer la réservation (sans professionnel assigné, ce sera fait quand un pro accepte)
   const booking = await prisma.booking.create({
     data: {
       userId,
@@ -124,9 +136,18 @@ export const createBooking = asyncHandler(async (req: Request, res: Response) =>
       latitude,
       longitude,
       price,
-      professional,
+      professional: null, // Sera assigné quand un pro accepte la mission
       notes,
       status: 'confirmed',
+    },
+  });
+
+  // Créer automatiquement une mission en attente d'assignation par l'admin
+  await prisma.mission.create({
+    data: {
+      bookingId: booking.id,
+      status: 'pending',
+      proEarning,
     },
   });
 
@@ -205,6 +226,12 @@ export const cancelBooking = asyncHandler(async (req: Request, res: Response) =>
   // Annuler la réservation
   const booking = await prisma.booking.update({
     where: { id },
+    data: { status: 'cancelled' },
+  });
+
+  // Annuler la mission associée
+  await prisma.mission.updateMany({
+    where: { bookingId: id },
     data: { status: 'cancelled' },
   });
 
@@ -296,6 +323,97 @@ export const getBookingHistory = asyncHandler(async (req: Request, res: Response
         limit: Number(limit),
         total,
         totalPages: Math.ceil(total / Number(limit)),
+      },
+    },
+  });
+});
+
+// Obtenir la position du professionnel pour une mission en cours
+export const getProLocationForMission = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user!.id;
+  const { missionId } = req.params;
+
+  // Vérifier que la mission appartient au client
+  const mission = await prisma.mission.findFirst({
+    where: {
+      id: missionId,
+      booking: {
+        userId,
+      },
+    },
+    include: {
+      professional: {
+        select: {
+          id: true,
+          firstName: true,
+          avatar: true,
+          lastKnownLatitude: true,
+          lastKnownLongitude: true,
+          lastLocationUpdate: true,
+          isLocationSharing: true,
+        },
+      },
+      booking: {
+        select: {
+          address: true,
+          latitude: true,
+          longitude: true,
+        },
+      },
+    },
+  });
+
+  if (!mission) {
+    throw createError('Mission non trouvée', 404);
+  }
+
+  if (!mission.professional) {
+    throw createError('Aucun professionnel assigné', 404);
+  }
+
+  // Le pro doit avoir activé le partage de localisation et la mission doit être en cours
+  if (!mission.professional.isLocationSharing || mission.status !== 'in_progress') {
+    res.json({
+      success: true,
+      data: {
+        professional: {
+          id: mission.professional.id,
+          firstName: mission.professional.firstName,
+          avatar: mission.professional.avatar,
+        },
+        location: null,
+        message: mission.status !== 'in_progress'
+          ? 'La mission n\'a pas encore commencé'
+          : 'Le professionnel n\'a pas encore activé le partage de localisation',
+        destination: {
+          address: mission.booking.address,
+          latitude: mission.booking.latitude,
+          longitude: mission.booking.longitude,
+        },
+      },
+    });
+    return;
+  }
+
+  res.json({
+    success: true,
+    data: {
+      professional: {
+        id: mission.professional.id,
+        firstName: mission.professional.firstName,
+        avatar: mission.professional.avatar,
+      },
+      location: mission.professional.lastKnownLatitude && mission.professional.lastKnownLongitude
+        ? {
+            latitude: mission.professional.lastKnownLatitude,
+            longitude: mission.professional.lastKnownLongitude,
+            updatedAt: mission.professional.lastLocationUpdate,
+          }
+        : null,
+      destination: {
+        address: mission.booking.address,
+        latitude: mission.booking.latitude,
+        longitude: mission.booking.longitude,
       },
     },
   });

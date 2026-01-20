@@ -214,6 +214,11 @@ export const addPaymentMethod = asyncHandler(async (req: Request, res: Response)
     }
   }
 
+  // Vérifier que la carte est bien présente après attachement
+  if (!stripeMethod.card) {
+    throw createError('Méthode de paiement invalide après attachement', 400);
+  }
+
   // Si c'est la méthode par défaut, retirer le statut des autres
   if (isDefault) {
     await prisma.paymentMethod.updateMany({

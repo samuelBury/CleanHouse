@@ -8,6 +8,7 @@ import {
   cancelBooking,
   getUpcomingBookings,
   getBookingHistory,
+  getProLocationForMission,
 } from '../controllers/bookingController';
 import { authenticate } from '../middleware/auth';
 import {
@@ -43,5 +44,8 @@ router.put('/:id', validate(updateBookingValidation), updateBooking);
 
 // Annuler une réservation
 router.delete('/:id', validate(uuidParamValidation), cancelBooking);
+
+// Suivi du professionnel (localisation en temps réel)
+router.get('/missions/:missionId/pro-location', getProLocationForMission);
 
 export default router;

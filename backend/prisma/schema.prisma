@@ -46,12 +46,13 @@ model Booking {
   longitude    Float?
   price        Float
   status       BookingStatus @default(confirmed)
-  professional String?       // Nom du professionnel simulé
+  professional String?       // Nom du professionnel (pour affichage)
   notes        String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
   transaction  Transaction?
+  mission      Mission?
 }
 
 model Transaction {
@@ -90,6 +91,227 @@ model RefreshToken {
   createdAt DateTime @default(now())
 }
 
+// Modèle pour les professionnels (femmes de ménage)
+model Professional {
+  id                        String               @id @default(uuid())
+  email                     String               @unique
+  password                  String?              // null si invitation en cours
+  pseudonyme                String?              // Pseudonyme choisi lors de l'inscription
+  firstName                 String
+  lastName                  String
+  phone                     String
+  avatar                    String?
+  address                   String?
+  latitude                  Float?
+  longitude                 Float?
+  radius                    Int                  @default(20) // Rayon d'intervention en km
+  transportMode             TransportMode?       // Moyen de transport
+  bio                       String?
+  rating                    Float                @default(5.0)
+  totalMissions             Int                  @default(0)
+  isAvailable               Boolean              @default(true)
+  isVerified                Boolean              @default(false)
+  emailVerified             Boolean              @default(false)
+  emailVerificationToken    String?
+  emailVerificationExpires  DateTime?
+  passwordResetToken        String?
+  passwordResetExpires      DateTime?
+  stripeAccountId           String?              // Stripe Connect Account ID
+  createdAt                 DateTime             @default(now())
+  updatedAt                 DateTime             @updatedAt
+
+  // Documents onboarding
+  contractUrl               String?
+  idDocumentUrl             String?
+  proofOfAddressUrl         String?
+  socialSecurityNumber      String?
+
+  // Système d'invitation
+  invitationToken           String?              @unique
+  invitationExpires         DateTime?
+  accountSetupComplete      Boolean              @default(false)
+
+  // Push notifications
+  pushToken                 String?
+
+  // Géolocalisation temps réel
+  lastKnownLatitude         Float?
+  lastKnownLongitude        Float?
+  lastLocationUpdate        DateTime?
+  isLocationSharing         Boolean              @default(false)
+
+  missions          Mission[]
+  refreshTokens     ProRefreshToken[]
+  earnings          Earning[]
+  zones             ProfessionalZone[]
+  adminNotes        AdminNote[]
+  locationHistory   ProLocationHistory[]
+}
+
+model ProRefreshToken {
+  id             String       @id @default(uuid())
+  professionalId String
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  token          String       @unique
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+}
+
+// Missions assignées aux professionnels (liées aux bookings)
+model Mission {
+  id             String        @id @default(uuid())
+  bookingId      String        @unique
+  booking        Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  professionalId String?
+  professional   Professional? @relation(fields: [professionalId], references: [id], onDelete: SetNull)
+  status         MissionStatus @default(pending)
+  proEarning     Float         // Ce que le pro gagne
+  assignedAt     DateTime?     // Date d'assignation par l'admin
+  assignedBy     String?       // ID de l'admin qui a assigné
+  startedAt      DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  urgencies      Urgency[]
+}
+
+model Earning {
+  id             String       @id @default(uuid())
+  professionalId String
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  missionId      String?
+  amount         Float
+  description    String
+  isPaid         Boolean      @default(false)
+  paidAt         DateTime?
+  createdAt      DateTime     @default(now())
+}
+
+// Zone géographique pour l'assignation des missions
+model Zone {
+  id            String   @id @default(uuid())
+  name          String   @unique // ex: "Paris 15", "Boulogne-Billancourt"
+  postalCodes   String[] // Liste des codes postaux couverts
+  geometry      Json?    // GeoJSON polygon or circle
+  centerLat     Float?   // Center latitude for radius-based zones
+  centerLng     Float?   // Center longitude for radius-based zones
+  radius        Float?   // Radius in km for circular zones
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  professionals ProfessionalZone[]
+  admins        AdminZone[]
+}
+
+// Relation many-to-many entre Professional et Zone
+model ProfessionalZone {
+  id             String       @id @default(uuid())
+  professionalId String
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  zoneId         String
+  zone           Zone         @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  priority       Int          @default(0) // Priorité d'assignation (plus haut = prioritaire)
+  createdAt      DateTime     @default(now())
+
+  @@unique([professionalId, zoneId])
+}
+
+// Administrateur pour le dashboard SaaS
+model Admin {
+  id                     String   @id @default(uuid())
+  email                  String   @unique
+  password               String
+  firstName              String
+  lastName               String
+  role                   AdminRole @default(operator)
+  isActive               Boolean  @default(true)
+  lastLoginAt            DateTime?
+  passwordResetToken     String?
+  passwordResetExpires   DateTime?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  refreshTokens          AdminRefreshToken[]
+  zones                  AdminZone[]
+  resolvedUrgencies      Urgency[] @relation("ResolvedBy")
+  auditLogs              AuditLog[]
+  adminNotes             AdminNote[]
+}
+
+// Zone-based access control for admins
+model AdminZone {
+  id        String   @id @default(uuid())
+  adminId   String
+  admin     Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  zoneId    String
+  zone      Zone     @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([adminId, zoneId])
+}
+
+// Urgency management for real-time issue handling
+model Urgency {
+  id            String          @id @default(uuid())
+  missionId     String
+  mission       Mission         @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  type          UrgencyType
+  severity      UrgencySeverity
+  status        UrgencyStatus   @default(pending)
+  description   String?
+  createdAt     DateTime        @default(now())
+  resolvedAt    DateTime?
+  resolvedById  String?
+  resolvedBy    Admin?          @relation("ResolvedBy", fields: [resolvedById], references: [id], onDelete: SetNull)
+}
+
+// Audit trail for compliance
+model AuditLog {
+  id         String   @id @default(uuid())
+  adminId    String
+  admin      Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  action     String
+  entityType String
+  entityId   String
+  payload    Json?
+  timestamp  DateTime @default(now())
+}
+
+// Internal notes on professionals
+model AdminNote {
+  id             String       @id @default(uuid())
+  professionalId String
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  adminId        String
+  admin          Admin        @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  content        String
+  createdAt      DateTime     @default(now())
+}
+
+model AdminRefreshToken {
+  id        String   @id @default(uuid())
+  adminId   String
+  admin     Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+enum AdminRole {
+  super_admin  // Tous les droits
+  operator     // Peut assigner les missions
+}
+
+enum MissionStatus {
+  pending      // En attente d'assignation par l'admin
+  assigned     // Assignée à un pro (acceptation automatique)
+  in_progress  // Le pro a commencé la mission
+  completed    // Mission terminée
+  cancelled    // Annulée
+}
+
 enum ServiceType {
   MENAGE
   REPASSAGE
@@ -108,4 +330,46 @@ enum TransactionType {
   expense
   deposit
   refund
+}
+
+enum UrgencyType {
+  no_show
+  lateness
+  cancellation
+  complaint
+}
+
+enum UrgencySeverity {
+  critical
+  high
+  medium
+  low
+}
+
+enum UrgencyStatus {
+  pending
+  assigned
+  resolved
+}
+
+enum TransportMode {
+  car
+  public_transport
+  bike
+  scooter
+  walking
+}
+
+// Historique de localisation des professionnels
+model ProLocationHistory {
+  id              String       @id @default(uuid())
+  professionalId  String
+  professional    Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  missionId       String?
+  latitude        Float
+  longitude       Float
+  timestamp       DateTime     @default(now())
+
+  @@index([professionalId, timestamp])
+  @@index([missionId])
 }

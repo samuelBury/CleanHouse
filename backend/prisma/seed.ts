@@ -88,6 +88,41 @@ async function main() {
 
   console.log(`Created ${transactions.length} test transactions`);
 
+  // Créer un administrateur de test
+  const adminPassword = await bcrypt.hash('Admin1234', 12);
+
+  const admin = await prisma.admin.upsert({
+    where: { email: 'admin@cleanhouse.fr' },
+    update: {},
+    create: {
+      email: 'admin@cleanhouse.fr',
+      password: adminPassword,
+      firstName: 'Admin',
+      lastName: 'CleanHouse',
+      role: 'super_admin',
+      isActive: true,
+    },
+  });
+
+  console.log(`Created admin: ${admin.email} (password: Admin1234)`);
+
+  // Créer quelques zones de test
+  const zones = [
+    { name: 'Paris 15', postalCodes: ['75015'] },
+    { name: 'Paris 16', postalCodes: ['75016'] },
+    { name: 'Boulogne-Billancourt', postalCodes: ['92100'] },
+  ];
+
+  for (const zone of zones) {
+    await prisma.zone.upsert({
+      where: { name: zone.name },
+      update: {},
+      create: zone,
+    });
+  }
+
+  console.log(`Created ${zones.length} test zones`);
+
   console.log('Seeding completed!');
 }
 

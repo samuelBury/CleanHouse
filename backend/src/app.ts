@@ -9,9 +9,15 @@ import authRoutes from './routes/auth';
 import bookingRoutes from './routes/bookings';
 import paymentRoutes from './routes/payments';
 import userRoutes from './routes/users';
+import proRoutes from './routes/pro';
+import adminRoutes from './routes/admin';
+import { initReminderJobs } from './jobs/reminderJobs';
 
 // Charger les variables d'environnement
 dotenv.config();
+
+// Initialiser les jobs cron
+initReminderJobs();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -40,6 +46,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/pro', proRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Gestion des erreurs
 app.use(notFoundHandler);

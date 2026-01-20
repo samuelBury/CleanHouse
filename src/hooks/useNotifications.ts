@@ -1,68 +1,117 @@
 // Hook de notifications push pour CleanHouse
 import { useState, useEffect, useRef, useCallback } from 'react';
-import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { Colors } from '../config/theme';
 import { storage } from '../utils/storage';
 import { authService } from '../services/authService';
 import type { PushNotification } from '../types';
 
-// Configure notification handling
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
+// Conditionally import expo-device (not available in Expo Go)
+let Device: any = null;
+try {
+  Device = require('expo-device');
+} catch (e) {
+  console.log('expo-device not available');
+}
+
+// Conditionally import expo-notifications (not available in Expo Go with certain configurations)
+let Notifications: any = null;
+let notificationsAvailable = false;
+let notificationsInitialized = false;
+
+// Defer initialization to avoid crash on import
+const initNotifications = () => {
+  if (notificationsInitialized) return notificationsAvailable;
+  notificationsInitialized = true;
+
+  try {
+    Notifications = require('expo-notifications');
+    // Don't call setNotificationHandler here - it will crash in Expo Go
+    notificationsAvailable = true;
+    console.log('Notifications module loaded');
+  } catch (e) {
+    console.log('Notifications not available:', e);
+    notificationsAvailable = false;
+  }
+  return notificationsAvailable;
+};
 
 interface UseNotificationsResult {
   expoPushToken: string | null;
-  notification: Notifications.Notification | null;
+  notification: any | null;
   isLoading: boolean;
   error: string | null;
   registerForPushNotifications: () => Promise<string | null>;
-  scheduleNotification: (notification: PushNotification, trigger?: Notifications.NotificationTriggerInput) => Promise<string | null>;
+  scheduleNotification: (notification: PushNotification, trigger?: any) => Promise<string | null>;
   cancelNotification: (notificationId: string) => Promise<void>;
   cancelAllNotifications: () => Promise<void>;
 }
 
 export const useNotifications = (): UseNotificationsResult => {
   const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
-  const [notification, setNotification] = useState<Notifications.Notification | null>(null);
+  const [notification, setNotification] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const notificationListener = useRef<Notifications.Subscription>();
-  const responseListener = useRef<Notifications.Subscription>();
+  const notificationListener = useRef<any>();
+  const responseListener = useRef<any>();
 
   useEffect(() => {
-    // Listen for incoming notifications
-    notificationListener.current = Notifications.addNotificationReceivedListener(
-      (notification) => {
-        setNotification(notification);
-      }
-    );
+    // Try to initialize notifications
+    const isAvailable = initNotifications();
 
-    // Listen for notification interactions
-    responseListener.current = Notifications.addNotificationResponseReceivedListener(
-      (response) => {
-        const { notification } = response;
-        // Handle notification tap here
-        console.log('Notification tapped:', notification.request.content);
-      }
-    );
+    if (!isAvailable || !Notifications) {
+      console.log('Notifications not available in this environment');
+      return;
+    }
 
-    // Load stored push token
-    loadStoredToken();
+    try {
+      // Set notification handler
+      Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: true,
+          shouldPlaySound: true,
+          shouldSetBadge: true,
+        }),
+      });
+
+      // Listen for incoming notifications
+      notificationListener.current = Notifications.addNotificationReceivedListener(
+        (notification: any) => {
+          setNotification(notification);
+        }
+      );
+
+      // Listen for notification interactions
+      responseListener.current = Notifications.addNotificationResponseReceivedListener(
+        (response: any) => {
+          const { notification } = response;
+          // Handle notification tap here
+          console.log('Notification tapped:', notification.request.content);
+        }
+      );
+
+      // Load stored push token
+      loadStoredToken();
+    } catch (e) {
+      console.log('Notifications setup failed (Expo Go):', e);
+      notificationsAvailable = false;
+    }
 
     return () => {
       if (notificationListener.current) {
-        notificationListener.current.remove();
+        try {
+          notificationListener.current.remove();
+        } catch (e) {
+          // Ignore cleanup errors
+        }
       }
       if (responseListener.current) {
-        responseListener.current.remove();
+        try {
+          responseListener.current.remove();
+        } catch (e) {
+          // Ignore cleanup errors
+        }
       }
     };
   }, []);
@@ -76,12 +125,18 @@ export const useNotifications = (): UseNotificationsResult => {
 
   // Register for push notifications
   const registerForPushNotifications = useCallback(async (): Promise<string | null> => {
+    initNotifications();
+    if (!notificationsAvailable || !Notifications) {
+      setError('Notifications non disponibles dans Expo Go');
+      return null;
+    }
+
     setIsLoading(true);
     setError(null);
 
     try {
       // Check if physical device
-      if (!Device.isDevice) {
+      if (Device && !Device.isDevice) {
         setError('Les notifications push nécessitent un appareil physique');
         setIsLoading(false);
         return null;
@@ -140,8 +195,14 @@ export const useNotifications = (): UseNotificationsResult => {
   const scheduleNotification = useCallback(
     async (
       notificationData: PushNotification,
-      trigger?: Notifications.NotificationTriggerInput
+      trigger?: any
     ): Promise<string | null> => {
+      initNotifications();
+      if (!notificationsAvailable || !Notifications) {
+        console.log('Notifications not available');
+        return null;
+      }
+
       try {
         const notificationId = await Notifications.scheduleNotificationAsync({
           content: {
@@ -163,12 +224,24 @@ export const useNotifications = (): UseNotificationsResult => {
 
   // Cancel a specific notification
   const cancelNotification = useCallback(async (notificationId: string): Promise<void> => {
-    await Notifications.cancelScheduledNotificationAsync(notificationId);
+    initNotifications();
+    if (!notificationsAvailable || !Notifications) return;
+    try {
+      await Notifications.cancelScheduledNotificationAsync(notificationId);
+    } catch (e) {
+      console.log('Cancel notification failed:', e);
+    }
   }, []);
 
   // Cancel all notifications
   const cancelAllNotifications = useCallback(async (): Promise<void> => {
-    await Notifications.cancelAllScheduledNotificationsAsync();
+    initNotifications();
+    if (!notificationsAvailable || !Notifications) return;
+    try {
+      await Notifications.cancelAllScheduledNotificationsAsync();
+    } catch (e) {
+      console.log('Cancel all notifications failed:', e);
+    }
   }, []);
 
   return {
@@ -189,6 +262,12 @@ export const scheduleBookingReminder = async (
   serviceName: string,
   date: Date
 ): Promise<string | null> => {
+  initNotifications();
+  if (!notificationsAvailable || !Notifications) {
+    console.log('Notifications not available for booking reminder');
+    return null;
+  }
+
   const reminderDate = new Date(date);
   reminderDate.setHours(reminderDate.getHours() - 24);
 

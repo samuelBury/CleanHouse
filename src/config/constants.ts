@@ -4,7 +4,7 @@ import {Colors} from './theme';
 // API Configuration
 export const API_CONFIG = {
   BASE_URL: __DEV__ ? 'http://192.168.1.193:3000/api' : 'https://api.cleanhouse.com/api',
-  TIMEOUT: 10000,
+  TIMEOUT: 15000,
 };
 
 // Services disponibles

@@ -9,8 +9,11 @@ export const JWT_CONFIG = {
 };
 
 export interface TokenPayload {
-  userId: string;
+  userId?: string;
+  professionalId?: string;
+  adminId?: string;
   email: string;
+  type?: 'user' | 'professional' | 'admin';
 }
 
 export const generateAccessToken = (payload: TokenPayload): string => {

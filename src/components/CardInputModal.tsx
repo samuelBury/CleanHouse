@@ -15,9 +15,28 @@ import {
   TextInput,
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {CardField, useStripe, CardFieldInput} from '@stripe/stripe-react-native';
 import {FontAwesome5} from '@expo/vector-icons';
 import {Colors} from '../config/theme';
+
+// Conditionally import Stripe (not available in Expo Go)
+let CardField: any = null;
+let useStripe: any = null;
+let stripeAvailable = false;
+
+try {
+  const stripe = require('@stripe/stripe-react-native');
+  CardField = stripe.CardField;
+  useStripe = stripe.useStripe;
+  stripeAvailable = true;
+} catch (e) {
+  console.log('Stripe not available in CardInputModal');
+}
+
+type CardFieldInput = {
+  Details: {
+    complete: boolean;
+  };
+};
 
 interface CardInputModalProps {
   visible: boolean;
@@ -38,7 +57,8 @@ export default function CardInputModal({
   clientSecret,
   isIndeterminate = false,
 }: CardInputModalProps) {
-  const {confirmPayment} = useStripe();
+  const stripeHook = stripeAvailable && useStripe ? useStripe() : null;
+  const confirmPayment = stripeHook?.confirmPayment;
   const insets = useSafeAreaInsets();
   const [isLoading, setIsLoading] = useState(false);
   const [cardComplete, setCardComplete] = useState(false);
@@ -152,73 +172,91 @@ export default function CardInputModal({
 
               {/* Card Form */}
               <View style={styles.formContainer}>
-                {/* Nom du titulaire */}
-                <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>Nom du titulaire</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="Jean Dupont"
-                    placeholderTextColor="#999"
-                    value={cardholderName}
-                    onChangeText={setCardholderName}
-                    autoCapitalize="words"
-                    autoCorrect={false}
-                  />
-                </View>
-
-                {/* Stripe CardField */}
-                <View style={styles.formGroup}>
-                  <Text style={styles.formLabel}>Informations de carte</Text>
-                  <CardField
-                    postalCodeEnabled={false}
-                    placeholders={{
-                      number: '4242 4242 4242 4242',
-                    }}
-                    cardStyle={styles.cardFieldStyle}
-                    style={styles.cardField}
-                    onCardChange={handleCardChange}
-                  />
-                </View>
-
-                {/* Option enregistrer la carte */}
-                <View style={styles.saveCardContainer}>
-                  <View style={styles.saveCardTextContainer}>
-                    <Text style={styles.saveCardLabel}>Enregistrer cette carte</Text>
-                    <Text style={styles.saveCardDescription}>
-                      Pour vos prochains paiements
+                {!stripeAvailable ? (
+                  <View style={styles.stripeUnavailable}>
+                    <FontAwesome5 name="exclamation-triangle" size={48} color="#f59e0b" />
+                    <Text style={styles.stripeUnavailableTitle}>Paiement non disponible</Text>
+                    <Text style={styles.stripeUnavailableText}>
+                      Le paiement par carte n'est pas disponible dans Expo Go.
+                      Veuillez utiliser un development build pour activer les paiements.
                     </Text>
+                    <TouchableOpacity style={styles.closeButtonAlt} onPress={onClose}>
+                      <Text style={styles.closeButtonAltText}>Fermer</Text>
+                    </TouchableOpacity>
                   </View>
-                  <Switch
-                    value={shouldSaveCard}
-                    onValueChange={setShouldSaveCard}
-                    trackColor={{false: '#ddd', true: Colors.primary}}
-                    thumbColor={shouldSaveCard ? '#fff' : '#f4f3f4'}
-                  />
-                </View>
+                ) : (
+                  <>
+                    {/* Nom du titulaire */}
+                    <View style={styles.formGroup}>
+                      <Text style={styles.formLabel}>Nom du titulaire</Text>
+                      <TextInput
+                        style={styles.textInput}
+                        placeholder="Jean Dupont"
+                        placeholderTextColor="#999"
+                        value={cardholderName}
+                        onChangeText={setCardholderName}
+                        autoCapitalize="words"
+                        autoCorrect={false}
+                      />
+                    </View>
 
-                {/* Sécurité */}
-                <View style={styles.securityInfo}>
-                  <FontAwesome5 name="lock" size={14} color={Colors.text.secondary} style={styles.securityIcon} />
-                  <Text style={styles.securityText}>
-                    Paiement sécurisé par Stripe
-                  </Text>
-                </View>
+                    {/* Stripe CardField */}
+                    <View style={styles.formGroup}>
+                      <Text style={styles.formLabel}>Informations de carte</Text>
+                      {CardField && (
+                        <CardField
+                          postalCodeEnabled={false}
+                          placeholders={{
+                            number: '4242 4242 4242 4242',
+                          }}
+                          cardStyle={styles.cardFieldStyle}
+                          style={styles.cardField}
+                          onCardChange={handleCardChange}
+                        />
+                      )}
+                    </View>
 
-                {/* Bouton de confirmation */}
-                <TouchableOpacity
-                  style={[
-                    styles.confirmButton,
-                    (!cardComplete || !cardholderName.trim() || isLoading) && styles.confirmButtonDisabled,
-                  ]}
-                  onPress={handleSubmit}
-                  disabled={!cardComplete || !cardholderName.trim() || isLoading}
-                >
-                  {isLoading ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={styles.confirmButtonText}>Payer {amount}</Text>
-                  )}
-                </TouchableOpacity>
+                    {/* Option enregistrer la carte */}
+                    <View style={styles.saveCardContainer}>
+                      <View style={styles.saveCardTextContainer}>
+                        <Text style={styles.saveCardLabel}>Enregistrer cette carte</Text>
+                        <Text style={styles.saveCardDescription}>
+                          Pour vos prochains paiements
+                        </Text>
+                      </View>
+                      <Switch
+                        value={shouldSaveCard}
+                        onValueChange={setShouldSaveCard}
+                        trackColor={{false: '#ddd', true: Colors.primary}}
+                        thumbColor={shouldSaveCard ? '#fff' : '#f4f3f4'}
+                      />
+                    </View>
+
+                    {/* Sécurité */}
+                    <View style={styles.securityInfo}>
+                      <FontAwesome5 name="lock" size={14} color={Colors.text.secondary} style={styles.securityIcon} />
+                      <Text style={styles.securityText}>
+                        Paiement sécurisé par Stripe
+                      </Text>
+                    </View>
+
+                    {/* Bouton de confirmation */}
+                    <TouchableOpacity
+                      style={[
+                        styles.confirmButton,
+                        (!cardComplete || !cardholderName.trim() || isLoading) && styles.confirmButtonDisabled,
+                      ]}
+                      onPress={handleSubmit}
+                      disabled={!cardComplete || !cardholderName.trim() || isLoading}
+                    >
+                      {isLoading ? (
+                        <ActivityIndicator color="#fff" />
+                      ) : (
+                        <Text style={styles.confirmButtonText}>Payer {amount}</Text>
+                      )}
+                    </TouchableOpacity>
+                  </>
+                )}
               </View>
             </View>
           </View>
@@ -385,6 +423,36 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   confirmButtonText: {
+    color: Colors.text.inverse,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  stripeUnavailable: {
+    alignItems: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+  },
+  stripeUnavailableTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.text.primary,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  stripeUnavailableText: {
+    fontSize: 14,
+    color: Colors.text.secondary,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  closeButtonAlt: {
+    marginTop: 24,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  closeButtonAltText: {
     color: Colors.text.inverse,
     fontSize: 16,
     fontWeight: '600',

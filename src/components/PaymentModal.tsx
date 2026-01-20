@@ -11,13 +11,26 @@ import {
   Platform,
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {PlatformPay, usePlatformPay, PlatformPayButton} from '@stripe/stripe-react-native';
 import {FontAwesome5} from '@expo/vector-icons';
 import {LinearGradient} from 'expo-linear-gradient';
 import CardInputModal from './CardInputModal';
 import {Colors} from '../config/theme';
 import {paymentService} from '../services/paymentService';
 import type {PaymentMethod} from '../types';
+
+// Conditionally import Stripe (not available in Expo Go)
+let PlatformPay: any = null;
+let usePlatformPay: any = null;
+let stripeAvailable = false;
+
+try {
+  const stripe = require('@stripe/stripe-react-native');
+  PlatformPay = stripe.PlatformPay;
+  usePlatformPay = stripe.usePlatformPay;
+  stripeAvailable = true;
+} catch (e) {
+  console.log('Stripe not available in PaymentModal');
+}
 
 interface PaymentModalProps {
   visible: boolean;
@@ -41,7 +54,9 @@ export default function PaymentModal({
   isIndeterminate,
 }: PaymentModalProps) {
   const insets = useSafeAreaInsets();
-  const {isPlatformPaySupported, confirmPlatformPayPayment} = usePlatformPay();
+  const platformPayHook = stripeAvailable && usePlatformPay ? usePlatformPay() : null;
+  const isPlatformPaySupported = platformPayHook?.isPlatformPaySupported;
+  const confirmPlatformPayPayment = platformPayHook?.confirmPlatformPayPayment;
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
   const [showCardInput, setShowCardInput] = useState(false);
   const [clientSecret, setClientSecret] = useState<string>('');
@@ -53,13 +68,15 @@ export default function PaymentModal({
   // Vérifier si Apple Pay est disponible
   useEffect(() => {
     const checkApplePay = async () => {
-      if (Platform.OS === 'ios') {
+      if (Platform.OS === 'ios' && stripeAvailable && isPlatformPaySupported) {
         const isSupported = await isPlatformPaySupported();
         setApplePayAvailable(isSupported);
+      } else {
+        setApplePayAvailable(false);
       }
     };
     checkApplePay();
-  }, []);
+  }, [isPlatformPaySupported]);
 
   // Charger les cartes sauvegardées
   useEffect(() => {
@@ -79,6 +96,11 @@ export default function PaymentModal({
 
   // Paiement Apple Pay
   const handleApplePay = async () => {
+    if (!stripeAvailable || !confirmPlatformPayPayment || !PlatformPay) {
+      Alert.alert('Erreur', 'Apple Pay non disponible dans Expo Go');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
