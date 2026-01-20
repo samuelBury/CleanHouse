@@ -11,8 +11,8 @@ RUN apk add --no-cache openssl
 COPY package*.json ./
 COPY prisma ./prisma/
 
-# Installer les dépendances
-RUN npm ci --only=production
+# Installer TOUTES les dépendances (y compris devDependencies pour le build)
+RUN npm ci
 
 # Générer le client Prisma
 RUN npx prisma generate
@@ -22,6 +22,9 @@ COPY . .
 
 # Compiler TypeScript
 RUN npm run build
+
+# Supprimer les devDependencies après le build
+RUN npm prune --production
 
 # Exposer le port
 EXPOSE 3000
