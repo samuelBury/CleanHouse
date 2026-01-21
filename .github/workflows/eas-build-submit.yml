@@ -1,0 +1,44 @@
+name: EAS Build & Submit
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-submit:
+    name: Build & Submit to Stores
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Expo
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build iOS
+        run: eas build --platform ios --profile production --non-interactive --no-wait
+
+      - name: Build Android
+        run: eas build --platform android --profile production --non-interactive --no-wait
+
+      - name: Submit iOS to App Store
+        run: eas submit --platform ios --latest --non-interactive
+        continue-on-error: true
+
+      - name: Submit Android to Google Play
+        run: eas submit --platform android --latest --non-interactive
+        continue-on-error: true

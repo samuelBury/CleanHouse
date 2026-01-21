@@ -19,6 +19,16 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "votre@email.com",
+        "ascAppId": "VOTRE_APP_ID",
+        "appleTeamId": "VOTRE_TEAM_ID"
+      },
+      "android": {
+        "track": "internal",
+        "releaseStatus": "draft"
+      }
+    }
   }
 }
