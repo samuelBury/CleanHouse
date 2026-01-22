@@ -17,7 +17,11 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.samy00.CleanAppExpo",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "CleanHouse utilise la caméra pour scanner des documents et prendre des photos de profil.",
+        "NSPhotoLibraryUsageDescription": "CleanHouse accède à vos photos pour télécharger une photo de profil.",
+        "NSLocationWhenInUseUsageDescription": "CleanHouse utilise votre position pour trouver des professionnels près de chez vous.",
+        "NSLocationAlwaysUsageDescription": "CleanHouse utilise votre position pour le suivi des interventions en temps réel."
       }
     },
     "android": {
