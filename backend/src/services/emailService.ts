@@ -1,7 +1,7 @@
 // Service d'envoi d'emails avec Nodemailer
 import nodemailer from 'nodemailer';
 
-// Configuration du transporteur SMTP
+// Configuration du transporteur SMTP avec timeout et pooling
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
   port: parseInt(process.env.SMTP_PORT || '587'),
@@ -10,6 +10,12 @@ const transporter = nodemailer.createTransport({
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  pool: true, // Utiliser un pool de connexions
+  maxConnections: 5,
+  maxMessages: 100,
+  connectionTimeout: 10000, // 10 secondes max pour se connecter
+  greetingTimeout: 10000,
+  socketTimeout: 30000, // 30 secondes max pour l'envoi
 });
 
 // Vérifier la connexion SMTP au démarrage (seulement si configuré)
