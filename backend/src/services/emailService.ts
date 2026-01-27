@@ -66,6 +66,22 @@ export const sendEmail = async (data: EmailData): Promise<boolean> => {
   }
 };
 
+// Wrapper avec timeout pour ne pas bloquer indéfiniment
+export const sendEmailWithTimeout = async (
+  emailFn: () => Promise<boolean>,
+  timeoutMs: number = 5000
+): Promise<boolean> => {
+  const timeoutPromise = new Promise<boolean>((resolve) => {
+    setTimeout(() => {
+      console.log('Email sending timed out, continuing in background...');
+      resolve(true); // Return true to not block the flow
+    }, timeoutMs);
+  });
+
+  // Race between the email sending and the timeout
+  return Promise.race([emailFn(), timeoutPromise]);
+};
+
 // Envoyer l'email de vérification
 export const sendVerificationEmail = async (
   to: string,
