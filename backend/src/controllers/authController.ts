@@ -9,7 +9,7 @@ import {
   getRefreshTokenExpiry,
 } from '../config/auth';
 import { asyncHandler, createError } from '../middleware/errorHandler';
-import { generateVerificationToken, sendVerificationEmail, sendWelcomeEmail, sendPasswordResetEmail, sendEmailWithTimeout } from '../services/emailService';
+import { generateVerificationToken, sendVerificationEmail, sendWelcomeEmail, sendPasswordResetEmail } from '../services/emailService';
 import stripeService from '../services/stripeService';
 
 // Inscription
@@ -33,8 +33,10 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
         },
       });
 
-      // Envoyer l'email avec timeout de 5 secondes pour ne pas bloquer
-      await sendEmailWithTimeout(() => sendVerificationEmail(email, existingUser.name, verificationToken), 5000);
+      // Envoyer l'email en arrière-plan (fire-and-forget)
+      sendVerificationEmail(email, existingUser.name, verificationToken).catch(err => {
+        console.error('Erreur envoi email vérification:', err);
+      });
 
       return res.status(200).json({
         success: true,
@@ -73,8 +75,10 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
     },
   });
 
-  // Envoyer l'email de vérification avec timeout de 5 secondes
-  await sendEmailWithTimeout(() => sendVerificationEmail(email, name, verificationToken), 5000);
+  // Envoyer l'email de vérification en arrière-plan (fire-and-forget)
+  sendVerificationEmail(email, name, verificationToken).catch(err => {
+    console.error('Erreur envoi email vérification:', err);
+  });
 
   res.status(201).json({
     success: true,
@@ -560,8 +564,10 @@ export const resendVerification = asyncHandler(async (req: Request, res: Respons
     },
   });
 
-  // Envoyer l'email avec timeout
-  await sendEmailWithTimeout(() => sendVerificationEmail(email, user.name, verificationToken), 5000);
+  // Envoyer l'email en arrière-plan
+  sendVerificationEmail(email, user.name, verificationToken).catch(err => {
+    console.error('Erreur envoi email vérification:', err);
+  });
 
   res.json({
     success: true,
