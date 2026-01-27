@@ -3,11 +3,14 @@
     "name": "CleanAppExpo",
     "slug": "CleanAppExpo",
     "scheme": "cleanappexpo",
+    "plugins": [
+      "./plugins/withATS"
+    ],
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -21,7 +24,26 @@
         "NSCameraUsageDescription": "CleanHouse utilise la caméra pour scanner des documents et prendre des photos de profil.",
         "NSPhotoLibraryUsageDescription": "CleanHouse accède à vos photos pour télécharger une photo de profil.",
         "NSLocationWhenInUseUsageDescription": "CleanHouse utilise votre position pour trouver des professionnels près de chez vous.",
-        "NSLocationAlwaysUsageDescription": "CleanHouse utilise votre position pour le suivi des interventions en temps réel."
+        "NSLocationAlwaysUsageDescription": "CleanHouse utilise votre position pour le suivi des interventions en temps réel.",
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true,
+          "NSAllowsArbitraryLoadsForMedia": true,
+          "NSAllowsArbitraryLoadsInWebContent": true,
+          "NSExceptionDomains": {
+            "railway.app": {
+              "NSIncludesSubdomains": true,
+              "NSExceptionAllowsInsecureHTTPLoads": true,
+              "NSExceptionMinimumTLSVersion": "TLSv1.2",
+              "NSExceptionRequiresForwardSecrecy": false
+            },
+            "up.railway.app": {
+              "NSIncludesSubdomains": true,
+              "NSExceptionAllowsInsecureHTTPLoads": true,
+              "NSExceptionMinimumTLSVersion": "TLSv1.2",
+              "NSExceptionRequiresForwardSecrecy": false
+            }
+          }
+        }
       }
     },
     "android": {

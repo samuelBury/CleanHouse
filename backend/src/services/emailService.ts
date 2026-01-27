@@ -1,5 +1,6 @@
 // Service d'envoi d'emails avec Resend
-import { Resend } from 'resend';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { Resend } = require('resend');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 

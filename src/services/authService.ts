@@ -10,11 +10,30 @@ import type {
 } from '../types';
 
 export const authService = {
-  // Login with email/password
+  // Login with email/password - Utilise fetch natif pour éviter les problèmes axios sur iOS
   async login(credentials: LoginCredentials): Promise<ApiResponse<AuthResponse>> {
+    const API_URL = 'https://cleanhouse-production.up.railway.app/api';
+
     try {
-      const response = await api.post('/auth/login', credentials);
-      const { user, accessToken, refreshToken } = response.data.data;
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        return {
+          success: false,
+          error: responseData.message || `Erreur serveur ${response.status}`
+        };
+      }
+
+      const { user, accessToken, refreshToken } = responseData.data;
 
       // Store tokens and user data
       await storage.setAuthToken(accessToken);
@@ -22,36 +41,59 @@ export const authService = {
       await storage.setUserData(user);
 
       return { success: true, data: { user, token: accessToken, refreshToken } };
-    } catch (error) {
-      return { success: false, error: handleApiError(error) };
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Erreur inconnue';
+      return { success: false, error: `Erreur réseau: ${errorMessage}` };
     }
   },
 
-  // Register new user
+  // Register new user - Utilise fetch natif pour éviter les problèmes axios sur iOS
   async register(credentials: RegisterCredentials): Promise<ApiResponse<AuthResponse> & { requiresVerification?: boolean; message?: string }> {
-    try {
-      const response = await api.post('/auth/register', credentials);
+    const API_URL = 'https://cleanhouse-production.up.railway.app/api';
 
-      // Si requiresVerification est true, l'utilisateur doit vérifier son email
-      if (response.data.requiresVerification) {
+    try {
+      const response = await fetch(`${API_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
         return {
-          success: true,
-          requiresVerification: true,
-          message: response.data.message,
-          data: response.data.data,
+          success: false,
+          error: responseData.message || `Erreur serveur ${response.status}`
         };
       }
 
-      const { user, accessToken, refreshToken } = response.data.data;
+      // Si l'inscription nécessite une vérification email
+      if (responseData.requiresVerification) {
+        return {
+          success: true,
+          requiresVerification: true,
+          message: responseData.message,
+          data: responseData.data,
+        };
+      }
 
-      // Store tokens and user data (seulement si pas besoin de vérification)
+      // Sinon, stocker les tokens et connecter
+      const { user, accessToken, refreshToken } = responseData.data;
       await storage.setAuthToken(accessToken);
       await storage.setRefreshToken(refreshToken);
       await storage.setUserData(user);
 
       return { success: true, data: { user, token: accessToken, refreshToken } };
-    } catch (error) {
-      return { success: false, error: handleApiError(error) };
+    } catch (error: any) {
+      // Erreur réseau détaillée
+      const errorMessage = error?.message || 'Erreur inconnue';
+      return {
+        success: false,
+        error: `Erreur fetch: ${errorMessage} - URL: ${API_URL}`
+      };
     }
   },
 

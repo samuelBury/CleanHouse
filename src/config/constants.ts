@@ -2,9 +2,10 @@
 import {Colors} from './theme';
 
 // API Configuration
+// FORCÉ en production pour debug - TODO: remettre __DEV__ après résolution
 export const API_CONFIG = {
-  BASE_URL: __DEV__ ? 'http://192.168.1.193:3000/api' : 'https://cleanhouse-production.up.railway.app/api',
-  TIMEOUT: 15000,
+  BASE_URL: 'https://cleanhouse-production.up.railway.app/api',
+  TIMEOUT: 30000, // Augmenté à 30s pour les réseaux mobiles lents
 };
 
 // Services disponibles

@@ -63,10 +63,33 @@ api.interceptors.response.use(
   }
 );
 
-// Helper function to handle API errors
+// Helper function to handle API errors - avec debug détaillé
 export const handleApiError = (error: unknown): string => {
   if (axios.isAxiosError(error)) {
     const axiosError = error as AxiosError<{ message?: string; error?: string }>;
+
+    // DEBUG: Afficher les détails de l'erreur pour diagnostic
+    const debugInfo = {
+      code: axiosError.code,
+      message: axiosError.message,
+      url: axiosError.config?.url,
+      baseURL: axiosError.config?.baseURL,
+      status: axiosError.response?.status,
+    };
+    console.log('API Error Debug:', JSON.stringify(debugInfo));
+
+    // Erreur de timeout
+    if (axiosError.code === 'ECONNABORTED') {
+      return `Timeout - URL: ${API_CONFIG.BASE_URL}`;
+    }
+
+    // Erreur réseau (pas de connexion)
+    if (axiosError.code === 'ERR_NETWORK' || !axiosError.response) {
+      // Afficher l'URL pour debug
+      return `Erreur réseau (${axiosError.code || 'NO_RESPONSE'}) - URL: ${API_CONFIG.BASE_URL}`;
+    }
+
+    // Erreur serveur avec message
     if (axiosError.response?.data?.message) {
       return axiosError.response.data.message;
     }
@@ -77,7 +100,7 @@ export const handleApiError = (error: unknown): string => {
       return axiosError.message;
     }
   }
-  return 'Une erreur est survenue';
+  return `Erreur inconnue - URL: ${API_CONFIG.BASE_URL}`;
 };
 
 export default api;

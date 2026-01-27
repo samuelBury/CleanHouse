@@ -25,10 +25,14 @@ import { authService } from '../services/authService';
 
 const { width, height } = Dimensions.get('window');
 
+// Version pour debug - incrémenter à chaque build
+const APP_BUILD_VERSION = 'B25-FINAL';
+
 const AuthScreen: React.FC = () => {
   const { login, register, loginWithGoogle, loginWithApple, isLoading } = useAuth();
 
   const [isLogin, setIsLogin] = useState(true);
+  const [testResult, setTestResult] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -42,7 +46,11 @@ const AuthScreen: React.FC = () => {
   const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
   const [forgotPasswordSent, setForgotPasswordSent] = useState(false);
 
+  const [loginLoading, setLoginLoading] = useState(false);
+
   const handleLogin = async () => {
+    if (loginLoading) return;
+
     if (!email || !password) {
       Alert.alert('Erreur', 'Veuillez remplir tous les champs');
       return;
@@ -53,15 +61,47 @@ const AuthScreen: React.FC = () => {
       return;
     }
 
-    const result = await login({ email, password });
-    if (!result.success) {
-      // Vérifier si l'erreur est liée à la vérification email
-      if (result.error?.includes('vérifier votre email')) {
-        setVerificationEmail(email);
-        setShowVerificationMessage(true);
+    setLoginLoading(true);
+    setTestResult('Connexion...');
+
+    try {
+      const API_URL = 'https://cleanhouse-production.up.railway.app/api';
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+      setLoginLoading(false);
+
+      if (response.ok && data.data) {
+        // Succès - stocker les tokens via le context
+        const { user, accessToken, refreshToken } = data.data;
+        const result = await login({ email, password });
+        if (result.success) {
+          setTestResult('✅ Connecté!');
+        }
       } else {
-        Alert.alert('Erreur', result.error || 'Échec de la connexion');
+        // Erreur
+        const errorMsg = data.message || 'Échec de la connexion';
+        setTestResult(`❌ ${errorMsg}`);
+
+        if (errorMsg.includes('vérifier votre email') || errorMsg.includes('non vérifié')) {
+          setVerificationEmail(email);
+          setShowVerificationMessage(true);
+        } else {
+          Alert.alert('Erreur', errorMsg);
+        }
       }
+    } catch (error: any) {
+      setLoginLoading(false);
+      const errorMsg = error?.message || 'Erreur réseau';
+      setTestResult(`❌ ${errorMsg}`);
+      Alert.alert('Erreur', errorMsg);
     }
   };
 
@@ -101,38 +141,75 @@ const AuthScreen: React.FC = () => {
     }
   };
 
+  const [registerLoading, setRegisterLoading] = useState(false);
+
   const handleRegister = async () => {
+    // Empêcher double-click
+    if (registerLoading) return;
+
+    // Validation locale
     if (!name || !email || !phone || !password || !confirmPassword) {
       Alert.alert('Erreur', 'Veuillez remplir tous les champs');
       return;
     }
-
     if (!validators.isValidEmail(email)) {
       Alert.alert('Erreur', validationMessages.email.invalid);
       return;
     }
-
     if (!validators.isValidPassword(password)) {
       Alert.alert('Erreur', validationMessages.password.tooShort);
       return;
     }
-
     if (password !== confirmPassword) {
       Alert.alert('Erreur', validationMessages.password.mismatch);
       return;
     }
 
-    const result = await register({ email, password, name, phone: phone.replace(/\s/g, '') });
+    // Démarrer loading
+    setRegisterLoading(true);
+    setTestResult('Inscription...');
 
-    // Vérifier si l'inscription nécessite une vérification email
-    if (result.success && result.requiresVerification) {
-      setVerificationEmail(email);
-      setShowVerificationMessage(true);
-      return;
-    }
+    try {
+      // Appel API DIRECT (sans passer par AuthContext)
+      const API_URL = 'https://cleanhouse-production.up.railway.app/api';
+      const response = await fetch(`${API_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
+          name,
+          phone: phone.replace(/\s/g, '')
+        }),
+      });
 
-    if (!result.success) {
-      Alert.alert('Erreur', result.error || "Échec de l'inscription");
+      const data = await response.json();
+      setRegisterLoading(false);
+
+      if (response.ok || data.requiresVerification) {
+        // SUCCÈS - Alert immédiat puis écran vérification
+        const userEmail = email;
+        Alert.alert(
+          'Inscription réussie!',
+          'Vérifiez votre email pour activer votre compte.',
+          [{
+            text: 'OK',
+            onPress: () => {
+              setVerificationEmail(userEmail);
+              setShowVerificationMessage(true);
+            }
+          }]
+        );
+        setTestResult('✅ OK!');
+      } else {
+        // Erreur serveur
+        setTestResult(`❌ ${data.message}`);
+        Alert.alert('Erreur', data.message || "Échec de l'inscription");
+      }
+    } catch (error: any) {
+      setRegisterLoading(false);
+      setTestResult(`❌ ${error.message}`);
+      Alert.alert('Erreur', error.message || 'Erreur réseau');
     }
   };
 
@@ -142,6 +219,74 @@ const AuthScreen: React.FC = () => {
 
   const handleAppleLogin = async () => {
     Alert.alert('Info', 'Apple Sign-In sera implémenté prochainement');
+  };
+
+  // Test de connexion API direct - teste plusieurs endpoints
+  const [testCount, setTestCount] = useState(0);
+
+  const testConnection = async () => {
+    const API_URL = 'https://cleanhouse-production.up.railway.app/api';
+    const testNum = testCount + 1;
+    setTestCount(testNum);
+
+    // Alterne entre différents tests
+    if (testNum % 3 === 1) {
+      // Test 1: Simple GET (ou POST login)
+      setTestResult('Test 1: /auth/login...');
+      try {
+        const r = await fetch(`${API_URL}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: 'x@x.com', password: 'x' }),
+        });
+        const d = await r.json();
+        setTestResult(`T1 ✅ login: ${r.status} - ${d.message}`);
+      } catch (e: any) {
+        setTestResult(`T1 ❌ login: ${e.message}`);
+      }
+    } else if (testNum % 3 === 2) {
+      // Test 2: Register avec fetch
+      setTestResult('Test 2: /auth/register (fetch)...');
+      try {
+        const r = await fetch(`${API_URL}/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: `t${Date.now()}@t.com`,
+            password: 'Test1234!',
+            name: 'Test',
+            phone: '0600000000'
+          }),
+        });
+        const d = await r.json();
+        setTestResult(`T2 ✅ register fetch: ${r.status} - ${d.message || 'OK'}`);
+      } catch (e: any) {
+        setTestResult(`T2 ❌ register fetch: ${e.message}`);
+      }
+    } else {
+      // Test 3: Register avec XMLHttpRequest
+      setTestResult('Test 3: /auth/register (XHR)...');
+      const xhr = new XMLHttpRequest();
+      xhr.timeout = 60000;
+      xhr.onload = () => {
+        try {
+          const d = JSON.parse(xhr.responseText);
+          setTestResult(`T3 ✅ register XHR: ${xhr.status} - ${d.message || 'OK'}`);
+        } catch {
+          setTestResult(`T3 ✅ register XHR: ${xhr.status} - ${xhr.responseText.substring(0,50)}`);
+        }
+      };
+      xhr.onerror = () => setTestResult(`T3 ❌ register XHR error: ${xhr.status}`);
+      xhr.ontimeout = () => setTestResult(`T3 ❌ register XHR timeout`);
+      xhr.open('POST', `${API_URL}/auth/register`);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.send(JSON.stringify({
+        email: `t${Date.now()}@t.com`,
+        password: 'Test1234!',
+        name: 'Test',
+        phone: '0600000000'
+      }));
+    }
   };
 
   return (
@@ -165,6 +310,14 @@ const AuthScreen: React.FC = () => {
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
           >
+            {/* Version debug */}
+            <TouchableOpacity onPress={testConnection} style={styles.debugBanner}>
+              <Text style={styles.debugText}>
+                {APP_BUILD_VERSION} | Tap pour tester API
+              </Text>
+              {testResult && <Text style={styles.debugResult}>{testResult}</Text>}
+            </TouchableOpacity>
+
             {/* Logo et titre */}
             <View style={styles.headerSection}>
               <FontAwesome5 name="magic" size={40} color="#FFD700" style={styles.logoIcon} />
@@ -372,7 +525,7 @@ const AuthScreen: React.FC = () => {
               {/* Bouton principal */}
               <TouchableOpacity
                 onPress={isLogin ? handleLogin : handleRegister}
-                disabled={isLoading}
+                disabled={isLogin ? loginLoading : registerLoading}
                 activeOpacity={0.8}
                 style={styles.primaryButtonContainer}
               >
@@ -380,9 +533,9 @@ const AuthScreen: React.FC = () => {
                   colors={Colors.gradient}
                   start={{x: 0, y: 0}}
                   end={{x: 1, y: 1}}
-                  style={[styles.primaryButton, isLoading && styles.buttonDisabled]}
+                  style={[styles.primaryButton, (isLogin ? loginLoading : registerLoading) && styles.buttonDisabled]}
                 >
-                  {isLoading ? (
+                  {(isLogin ? loginLoading : registerLoading) ? (
                     <ActivityIndicator color="#fff" />
                   ) : (
                     <Text style={styles.primaryButtonText}>
@@ -454,6 +607,23 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
+  },
+  debugBanner: {
+    backgroundColor: 'rgba(255, 165, 0, 0.9)',
+    padding: 8,
+    borderRadius: 8,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  debugText: {
+    color: '#000',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  debugResult: {
+    color: '#000',
+    fontSize: 11,
+    marginTop: 4,
   },
   backgroundImage: {
     flex: 1,
