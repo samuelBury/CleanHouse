@@ -1,33 +1,9 @@
-// Service d'envoi d'emails avec Nodemailer
-import nodemailer from 'nodemailer';
+// Service d'envoi d'emails avec Resend
+import { Resend } from 'resend';
 
-// Configuration du transporteur SMTP avec timeout et pooling
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: false, // true pour 465, false pour autres ports
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-  pool: true, // Utiliser un pool de connexions
-  maxConnections: 5,
-  maxMessages: 100,
-  connectionTimeout: 10000, // 10 secondes max pour se connecter
-  greetingTimeout: 10000,
-  socketTimeout: 30000, // 30 secondes max pour l'envoi
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Vérifier la connexion SMTP au démarrage (seulement si configuré)
-if (process.env.SMTP_USER && process.env.SMTP_PASS) {
-  transporter.verify((error) => {
-    if (error) {
-      console.error('Erreur de connexion SMTP:', error.message);
-    } else {
-      console.log('Service email prêt');
-    }
-  });
-}
+const FROM_EMAIL = 'CleanHouse <onboarding@resend.dev>';
 
 export interface EmailData {
   to: string;
@@ -43,25 +19,26 @@ export const generateVerificationToken = (): string => {
 
 // Fonction d'envoi générique
 export const sendEmail = async (data: EmailData): Promise<boolean> => {
-  // Mode simulation si SMTP non configuré
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.log('=== EMAIL SIMULATION ===');
+  if (!process.env.RESEND_API_KEY) {
+    console.log('=== EMAIL SIMULATION (RESEND_API_KEY not set) ===');
     console.log(`To: ${data.to}`);
     console.log(`Subject: ${data.subject}`);
-    console.log(`Body: ${data.text || 'HTML content'}`);
-    console.log('========================');
+    console.log('================================================');
     return true;
   }
 
   try {
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM || '"CleanHouse" <noreply@cleanhouse.com>',
-      ...data,
+    const result = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: data.to,
+      subject: data.subject,
+      html: data.html,
+      text: data.text,
     });
-    console.log(`Email envoyé à ${data.to}`);
+    console.log(`Email envoyé à ${data.to}`, result);
     return true;
   } catch (error) {
-    console.error('Erreur envoi email:', error);
+    console.error('Erreur envoi email Resend:', error);
     return false;
   }
 };
@@ -72,7 +49,7 @@ export const sendVerificationEmail = async (
   name: string,
   token: string
 ): Promise<boolean> => {
-  const verificationUrl = `${process.env.APP_URL || 'http://localhost:3000'}/api/auth/verify-email?token=${token}`;
+  const verificationUrl = `${process.env.APP_URL || 'https://cleanhouse-production.up.railway.app'}/api/auth/verify-email?token=${token}`;
 
   return sendEmail({
     to,
@@ -255,7 +232,7 @@ export const sendPasswordResetEmail = async (
   to: string,
   resetToken: string
 ): Promise<boolean> => {
-  const resetUrl = `${process.env.APP_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
+  const resetUrl = `${process.env.APP_URL || 'https://cleanhouse-production.up.railway.app'}/api/auth/reset-password?token=${resetToken}`;
 
   return sendEmail({
     to,

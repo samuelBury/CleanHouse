@@ -26,43 +26,24 @@ const router = Router();
 
 // Test email configuration (à supprimer en prod)
 router.get('/test-email', async (req, res) => {
-  const nodemailer = require('nodemailer');
+  const { Resend } = require('resend');
 
-  const config = {
-    SMTP_HOST: process.env.SMTP_HOST || 'NOT SET',
-    SMTP_PORT: process.env.SMTP_PORT || 'NOT SET',
-    SMTP_USER: process.env.SMTP_USER ? '***configured***' : 'NOT SET',
-    SMTP_PASS: process.env.SMTP_PASS ? '***configured***' : 'NOT SET',
-  };
-
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    return res.json({ success: false, message: 'SMTP not configured', config });
+  if (!process.env.RESEND_API_KEY) {
+    return res.json({ success: false, message: 'RESEND_API_KEY not configured' });
   }
 
   try {
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
-
-    await transporter.verify();
-
-    // Envoyer un email de test
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM || process.env.SMTP_USER,
-      to: process.env.SMTP_USER,
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    const result = await resend.emails.send({
+      from: 'CleanHouse <onboarding@resend.dev>',
+      to: 'samy.bury@gmail.com',
       subject: 'Test CleanHouse - Email fonctionne!',
-      text: 'Si tu reçois ceci, le SMTP est bien configuré!',
+      text: 'Si tu reçois ceci, Resend est bien configuré!',
     });
 
-    res.json({ success: true, message: 'Email de test envoyé!', config });
+    res.json({ success: true, message: 'Email de test envoyé!', result });
   } catch (error: any) {
-    res.json({ success: false, message: error.message, config });
+    res.json({ success: false, message: error.message });
   }
 });
 
