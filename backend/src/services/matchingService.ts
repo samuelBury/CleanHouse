@@ -46,7 +46,6 @@ export const findMatchingProfessionals = async (
   // Récupérer les professionnels disponibles
   const whereClause: Record<string, unknown> = {
     isAvailable: true,
-    isVerified: true,
   };
 
   // Filtrer par zones si spécifié

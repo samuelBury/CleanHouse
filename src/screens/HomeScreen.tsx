@@ -51,6 +51,8 @@ const HomeScreen: React.FC = () => {
   const [bookingTime, setBookingTime] = useState('');
   const [bookingDuration, setBookingDuration] = useState(0);
   const [bookingAddress, setBookingAddress] = useState('');
+  const [bookingLatitude, setBookingLatitude] = useState<number | undefined>();
+  const [bookingLongitude, setBookingLongitude] = useState<number | undefined>();
   const [isIndeterminate, setIsIndeterminate] = useState(false);
 
   useEffect(() => {
@@ -109,6 +111,8 @@ const HomeScreen: React.FC = () => {
     setBookingTime(data.time);
     setBookingDuration(data.duration);
     setBookingAddress(data.address);
+    setBookingLatitude(data.latitude);
+    setBookingLongitude(data.longitude);
     setIsIndeterminate(data.isIndeterminate);
 
     setShowBookingModal(false);
@@ -136,6 +140,8 @@ const HomeScreen: React.FC = () => {
           time: bookingTime,
           duration: bookingDuration,
           address: bookingAddress,
+          latitude: bookingLatitude,
+          longitude: bookingLongitude,
           paymentIntentId,
         });
 
@@ -198,6 +204,8 @@ const HomeScreen: React.FC = () => {
     setBookingTime('');
     setBookingDuration(0);
     setBookingAddress('');
+    setBookingLatitude(undefined);
+    setBookingLongitude(undefined);
     setIsIndeterminate(false);
     clearCurrentBooking();
   };
