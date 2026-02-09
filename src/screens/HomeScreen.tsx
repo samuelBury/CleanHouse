@@ -6,13 +6,14 @@ import {
   StyleSheet,
   StatusBar,
   RefreshControl,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Header from '../components/Header';
 import BackgroundSVG from '../components/BackgroundSVG';
-import HeroCard from '../components/HeroCard';
 import UpcomingBookingsCard from '../components/UpcomingBookingsCard';
+import NextConfirmedBookingCard from '../components/NextConfirmedBookingCard';
 import ServicesSection from '../components/ServicesSection';
 import BookingModal, { BookingData } from '../components/BookingModal';
 import PaymentModal from '../components/PaymentModal';
@@ -29,8 +30,8 @@ import type { ServiceType, Booking } from '../types';
 
 const HomeScreen: React.FC = () => {
   const { user } = useAuth();
-  const { bookings, fetchBookings, createBooking, cancelBooking, clearCurrentBooking, hasPendingBooking } = useBooking();
-  const { notification } = useNotifications();
+  const { bookings, fetchBookings, createBooking, cancelBooking, clearCurrentBooking } = useBooking();
+  const { notification, registerForPushNotifications } = useNotifications();
 
   // UI State
   const [refreshing, setRefreshing] = useState(false);
@@ -41,9 +42,7 @@ const HomeScreen: React.FC = () => {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-
-  // Afficher la recherche si une réservation est en attente
-  const showSearching = hasPendingBooking();
+  const [showSearching, setShowSearching] = useState(false);
 
   // Booking state
   const [selectedService, setSelectedService] = useState<ServiceType | null>(null);
@@ -55,6 +54,7 @@ const HomeScreen: React.FC = () => {
 
   useEffect(() => {
     fetchBookings();
+    registerForPushNotifications();
   }, []);
 
   // Écouter les notifications pour rafraîchir les données
@@ -116,10 +116,11 @@ const HomeScreen: React.FC = () => {
 
   const handlePaymentConfirm = async (paymentIntentId: string) => {
     setShowPaymentModal(false);
+    setShowSearching(true);
 
     if (selectedService) {
       try {
-        await createBooking({
+        const result = await createBooking({
           service: selectedService,
           date: bookingDate,
           time: bookingTime,
@@ -128,14 +129,37 @@ const HomeScreen: React.FC = () => {
           paymentIntentId,
         });
         await fetchBookings();
-        addNotification(
-          'booking_created',
-          'Réservation confirmée',
-          `Votre prestation ${selectedService} du ${bookingDate} à ${bookingTime} a été réservée.`
-        );
-        setShowConfirmation(true);
+
+        // Vérifier si un professionnel a été assigné
+        const professional = result.booking?.mission?.professional;
+
+        if (professional) {
+          // Pro trouvé → afficher confirmation avec le nom du pro
+          addNotification(
+            'booking_created',
+            'Réservation confirmée',
+            `${professional.firstName} s'occupera de votre prestation du ${bookingDate} à ${bookingTime}.`
+          );
+          // Petit délai pour une meilleure UX (transition visuelle)
+          setTimeout(() => {
+            setShowSearching(false);
+            setShowConfirmation(true);
+          }, 1500);
+        } else {
+          // Pas de pro disponible → créer quand même la notification et montrer confirmation
+          addNotification(
+            'booking_created',
+            'Réservation confirmée',
+            `Votre prestation ${selectedService} du ${bookingDate} à ${bookingTime} a été réservée. Nous recherchons un professionnel.`
+          );
+          // Montrer la recherche un peu plus longtemps puis la confirmation
+          setTimeout(() => {
+            setShowSearching(false);
+            setShowConfirmation(true);
+          }, 3000);
+        }
       } catch (error) {
-        // Erreur lors de la création
+        setShowSearching(false);
       }
     }
   };
@@ -199,12 +223,15 @@ const HomeScreen: React.FC = () => {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
         >
-          <HeroCard />
-          <ServicesSection onServiceSelect={handleServiceSelect} />
           <UpcomingBookingsCard
             bookings={bookings || []}
             onBookingPress={handleBookingPress}
           />
+          <NextConfirmedBookingCard
+            bookings={bookings || []}
+            onBookingPress={handleBookingPress}
+          />
+          <ServicesSection onServiceSelect={handleServiceSelect} />
           <View style={styles.bottomPadding} />
         </ScrollView>
       </SafeAreaView>
@@ -258,6 +285,14 @@ const HomeScreen: React.FC = () => {
         notifications={notifications}
         onMarkAsRead={markNotificationAsRead}
       />
+
+      {/* Branche de cerisier en bas */}
+      <Image
+        source={require('../../assets/images/branche-horizontal.png')}
+        style={styles.branchImage}
+        resizeMode="contain"
+        pointerEvents="none"
+      />
     </View>
   );
 };
@@ -275,6 +310,16 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 100,
+  },
+  branchImage: {
+    position: 'absolute',
+    bottom: 30,
+    left: -55,
+    right: 55,
+    height: 110,
+    width: '100%',
+    transform: [{scale: 2.1}],
+    pointerEvents: 'none',
   },
 });
 

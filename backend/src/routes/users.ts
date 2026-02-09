@@ -6,6 +6,7 @@ import {
   changePassword,
   getStats,
   deleteAccount,
+  updatePushToken,
 } from '../controllers/userController';
 import { authenticate } from '../middleware/auth';
 import { validate, paginationValidation } from '../middleware/validation';
@@ -35,6 +36,9 @@ router.put(
   ]),
   changePassword
 );
+
+// Push token
+router.put('/me/push-token', updatePushToken);
 
 // Statistiques
 router.get('/stats', getStats);

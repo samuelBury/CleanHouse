@@ -154,6 +154,26 @@ export const getStats = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
+// Mettre à jour le push token
+export const updatePushToken = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user!.id;
+  const { pushToken } = req.body;
+
+  if (!pushToken || typeof pushToken !== 'string') {
+    throw createError('pushToken requis', 400);
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { pushToken },
+  });
+
+  res.json({
+    success: true,
+    message: 'Push token mis à jour',
+  });
+});
+
 // Supprimer le compte
 export const deleteAccount = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user!.id;

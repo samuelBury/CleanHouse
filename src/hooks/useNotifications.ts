@@ -160,7 +160,7 @@ export const useNotifications = (): UseNotificationsResult => {
 
       // Get Expo push token
       const tokenData = await Notifications.getExpoPushTokenAsync({
-        projectId: 'your-project-id', // Replace with your Expo project ID
+        projectId: '24a9d45e-1abf-4a1b-8c59-ed1de82653dc',
       });
 
       const token = tokenData.data;
