@@ -22,14 +22,17 @@ import SearchingProfessional from '../components/SearchingProfessional';
 import BookingDetailsModal from '../components/BookingDetailsModal';
 import NotificationsModal, { Notification } from '../components/NotificationsModal';
 
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
 import { useBooking } from '../context/BookingContext';
 import { bookingService } from '../services/bookingService';
 import { useNotifications } from '../hooks/useNotifications';
 import { Colors } from '../config/theme';
-import type { ServiceType, Booking } from '../types';
+import type { ServiceType, Booking, RootStackParamList } from '../types';
 
 const HomeScreen: React.FC = () => {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { user } = useAuth();
   const { bookings, fetchBookings, createBooking, cancelBooking, clearCurrentBooking } = useBooking();
   const { notification, registerForPushNotifications } = useNotifications();
@@ -261,6 +264,7 @@ const HomeScreen: React.FC = () => {
           <NextConfirmedBookingCard
             bookings={bookings || []}
             onBookingPress={handleBookingPress}
+            onTrackPro={(missionId) => navigation.navigate('TrackPro', { missionId })}
           />
           <ServicesSection onServiceSelect={handleServiceSelect} />
           <View style={styles.bottomPadding} />
@@ -351,6 +355,7 @@ const styles = StyleSheet.create({
     width: '100%',
     transform: [{scale: 2.1}],
     pointerEvents: 'none',
+    zIndex: -1,
   },
 });
 

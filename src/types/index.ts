@@ -145,6 +145,7 @@ export interface ApiResponse<T> {
 export type RootStackParamList = {
   Auth: undefined;
   Main: undefined;
+  TrackPro: { missionId: string };
 };
 
 export type AuthStackParamList = {

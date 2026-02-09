@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { API_URL } from '../config/constants';
+import { API_CONFIG } from '../config/constants';
 import { useAuth } from '../context/AuthContext';
 
 const { width, height } = Dimensions.get('window');
@@ -58,7 +58,7 @@ const TrackProScreen: React.FC = () => {
   const loadLocationData = async () => {
     try {
       const response = await fetch(
-        `${API_URL}/api/bookings/missions/${missionId}/pro-location`,
+        `${API_CONFIG.BASE_URL}/bookings/missions/${missionId}/pro-location`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

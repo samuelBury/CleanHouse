@@ -7,6 +7,7 @@ import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import AuthNavigator from './AuthNavigator';
 import MainNavigator from './MainNavigator';
+import TrackProScreen from '../screens/TrackProScreen';
 import SplashScreen from '../screens/SplashScreen';
 import { Colors } from '../config/theme';
 
@@ -52,7 +53,10 @@ const AppNavigator: React.FC = () => {
         }}
       >
         {isAuthenticated ? (
-          <Stack.Screen name="Main" component={MainNavigator} />
+          <>
+            <Stack.Screen name="Main" component={MainNavigator} />
+            <Stack.Screen name="TrackPro" component={TrackProScreen} options={{ headerShown: false }} />
+          </>
         ) : (
           <Stack.Screen name="Auth" component={AuthNavigator} />
         )}

@@ -8,6 +8,7 @@ import type {Booking} from '../types';
 interface NextConfirmedBookingCardProps {
   bookings: Booking[];
   onBookingPress?: (booking: Booking) => void;
+  onTrackPro?: (missionId: string) => void;
 }
 
 // Helper pour parser une date (ISO ou DD/MM/YYYY)
@@ -43,6 +44,7 @@ const formatDateDisplay = (dateStr: string): string => {
 export default function NextConfirmedBookingCard({
   bookings,
   onBookingPress,
+  onTrackPro,
 }: NextConfirmedBookingCardProps) {
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -153,6 +155,18 @@ export default function NextConfirmedBookingCard({
             <FontAwesome5 name="map-marker-alt" size={11} color="rgba(255,255,255,0.7)" />
             <Text style={styles.addressText} numberOfLines={1}>{nextBooking.address}</Text>
           </View>
+
+          {/* Bouton Suivre le pro */}
+          {isConfirmed && nextBooking.mission?.id && onTrackPro && (
+            <TouchableOpacity
+              style={styles.trackButton}
+              activeOpacity={0.8}
+              onPress={() => onTrackPro(nextBooking.mission!.id!)}
+            >
+              <FontAwesome5 name="map-marker-alt" size={14} color={Colors.primary} />
+              <Text style={styles.trackButtonText}>Suivre mon professionnel</Text>
+            </TouchableOpacity>
+          )}
         </LinearGradient>
       </TouchableOpacity>
     </Animated.View>
@@ -263,5 +277,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: 'rgba(255,255,255,0.85)',
     flex: 1,
+  },
+  trackButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 12,
+    paddingVertical: 10,
+    marginTop: 12,
+    gap: 8,
+  },
+  trackButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.primary,
   },
 });
