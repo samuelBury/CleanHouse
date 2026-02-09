@@ -3,6 +3,22 @@ import React, { createContext, useContext, useReducer, useCallback, ReactNode } 
 import { bookingService } from '../services/bookingService';
 import type { Booking, CreateBookingData, ServiceType } from '../types';
 
+// Mode mock activé quand l'API est down
+const MOCK_MODE_ENABLED = true;
+
+// Générer un ID unique pour les bookings mock
+const generateMockId = () => `mock_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+// Calculer le prix selon le service
+const calculatePrice = (service: ServiceType, duration: number): number => {
+  const rates: Record<ServiceType, number> = {
+    'Ménage': 15,
+    'Repassage': 10,
+    'Ménage + Repassage': 20,
+  };
+  return (rates[service] || 15) * duration;
+};
+
 // State type
 interface BookingState {
   bookings: Booking[];
@@ -95,11 +111,25 @@ export const BookingProvider: React.FC<{ children: ReactNode }> = ({ children })
     dispatch({ type: 'SET_LOADING', payload: true });
     const result = await bookingService.getBookings();
     if (result.success && result.data) {
-      dispatch({ type: 'SET_BOOKINGS', payload: result.data });
+      // En mode mock, conserver les bookings locaux (mock_*) et ajouter ceux de l'API
+      if (MOCK_MODE_ENABLED) {
+        const currentMockBookings = state.bookings.filter(b => b.id.startsWith('mock_'));
+        const apiBookings = result.data.filter(b => !b.id.startsWith('mock_'));
+        const mergedBookings = [...currentMockBookings, ...apiBookings];
+        dispatch({ type: 'SET_BOOKINGS', payload: mergedBookings });
+      } else {
+        dispatch({ type: 'SET_BOOKINGS', payload: result.data });
+      }
     } else {
-      dispatch({ type: 'SET_ERROR', payload: result.error || 'Failed to fetch bookings' });
+      // API down: garder les bookings existants (notamment les mocks)
+      if (MOCK_MODE_ENABLED && state.bookings.length > 0) {
+        console.log('🔶 API down - Keeping existing bookings');
+        dispatch({ type: 'SET_LOADING', payload: false });
+      } else {
+        dispatch({ type: 'SET_ERROR', payload: result.error || 'Failed to fetch bookings' });
+      }
     }
-  }, []);
+  }, [state.bookings]);
 
   // Create new booking
   const createBooking = useCallback(async (data: CreateBookingData) => {
@@ -110,12 +140,46 @@ export const BookingProvider: React.FC<{ children: ReactNode }> = ({ children })
       dispatch({ type: 'CLEAR_CURRENT_BOOKING' });
       return { success: true, booking: result.data };
     }
+
+    // Mode Mock: créer une réservation locale si l'API est down
+    if (MOCK_MODE_ENABLED) {
+      console.log('🔶 API down - Creating mock booking');
+      const mockBooking: Booking = {
+        id: generateMockId(),
+        userId: 'mock_user',
+        service: data.service,
+        date: data.date,
+        time: data.time,
+        duration: data.duration,
+        address: data.address,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        price: calculatePrice(data.service, data.duration),
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+      };
+      dispatch({ type: 'ADD_BOOKING', payload: mockBooking });
+      dispatch({ type: 'CLEAR_CURRENT_BOOKING' });
+      console.log('✅ Mock booking created:', mockBooking);
+      return { success: true, booking: mockBooking };
+    }
+
     dispatch({ type: 'SET_ERROR', payload: result.error || 'Failed to create booking' });
     return { success: false, error: result.error };
   }, []);
 
   // Cancel booking
   const cancelBooking = useCallback(async (id: string) => {
+    // Pour les bookings mock, annuler localement
+    if (MOCK_MODE_ENABLED && id.startsWith('mock_')) {
+      console.log('🔶 Cancelling mock booking:', id);
+      const mockBooking = state.bookings.find(b => b.id === id);
+      if (mockBooking) {
+        dispatch({ type: 'UPDATE_BOOKING', payload: { ...mockBooking, status: 'cancelled' } });
+        return { success: true };
+      }
+    }
+
     dispatch({ type: 'SET_LOADING', payload: true });
     const result = await bookingService.cancelBooking(id);
     if (result.success) {
@@ -124,7 +188,7 @@ export const BookingProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
     dispatch({ type: 'SET_ERROR', payload: result.error || 'Failed to cancel booking' });
     return { success: false, error: result.error };
-  }, []);
+  }, [state.bookings]);
 
   // Set current booking (for booking flow)
   const setCurrentBooking = useCallback((booking: Partial<CreateBookingData> | null) => {

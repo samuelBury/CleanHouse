@@ -94,6 +94,26 @@ export default function PaymentModal({
     setLoadingCards(false);
   };
 
+  // Simuler un paiement (Expo Go uniquement)
+  const handleSimulatedPayment = async () => {
+    setIsLoading(true);
+    try {
+      const result = await paymentService.createPaymentIntent(getAmountInCents());
+      if (result.success && result.data?.paymentIntentId) {
+        onConfirm(result.data.paymentIntentId);
+      } else {
+        // Fallback: générer un ID simulé si le backend n'est pas joignable
+        const simulatedId = `sim_${Date.now()}`;
+        onConfirm(simulatedId);
+      }
+    } catch {
+      const simulatedId = `sim_${Date.now()}`;
+      onConfirm(simulatedId);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Paiement Apple Pay
   const handleApplePay = async () => {
     if (!stripeAvailable || !confirmPlatformPayPayment || !PlatformPay) {
@@ -298,7 +318,7 @@ export default function PaymentModal({
           />
           <View style={[styles.modalContent, {paddingBottom: insets.bottom + 20}]}>
             {/* Modal Header */}
-            <View style={styles.modalHeader}>
+            <LinearGradient colors={Colors.gradient} start={{x: 0, y: 0}} end={{x: 1, y: 0}} style={styles.modalHeader}>
               <View style={styles.modalHeaderIcon}>
                 <FontAwesome5 name="credit-card" size={18} color={Colors.text.inverse} solid />
               </View>
@@ -306,7 +326,7 @@ export default function PaymentModal({
               <TouchableOpacity style={styles.modalCloseButton} onPress={handleClose}>
                 <FontAwesome5 name="times" size={16} color={Colors.text.inverse} />
               </TouchableOpacity>
-            </View>
+            </LinearGradient>
 
             {/* Payment Methods - Scrollable */}
             <ScrollView
@@ -342,6 +362,24 @@ export default function PaymentModal({
               </View>
 
               <Text style={styles.sectionTitle}>Choisissez votre méthode de paiement</Text>
+
+              {/* Mode simulation Expo Go */}
+              {!stripeAvailable && (
+                <TouchableOpacity
+                  style={[styles.paymentOption, {borderColor: '#f59e0b', borderWidth: 2}]}
+                  onPress={handleSimulatedPayment}
+                  disabled={isLoading}
+                >
+                  <View style={[styles.paymentIconContainer, {backgroundColor: '#fef3c7'}]}>
+                    <FontAwesome5 name="flask" size={18} color="#f59e0b" />
+                  </View>
+                  <View style={styles.cardInfo}>
+                    <Text style={styles.paymentName}>Simuler le paiement</Text>
+                    <Text style={styles.cardExpiry}>Mode test — Expo Go</Text>
+                  </View>
+                  {isLoading && <ActivityIndicator size="small" color="#f59e0b" />}
+                </TouchableOpacity>
+              )}
 
               {/* Apple Pay */}
               {applePayAvailable && (
@@ -508,10 +546,9 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    position: 'relative',
-    backgroundColor: Colors.secondary,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    position: 'relative' as const,
   },
   modalHeaderIcon: {
     width: 40,
@@ -597,7 +634,7 @@ const styles = StyleSheet.create({
   },
   paymentOptionSelected: {
     borderColor: Colors.primary,
-    backgroundColor: 'Colors.primaryBackground',
+    backgroundColor: Colors.primaryBackground,
   },
   applePayOption: {
     backgroundColor: '#000',
@@ -681,7 +718,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     borderRadius: 30,
     overflow: 'hidden',
-    shadowColor: 'Colors.primary',
+    shadowColor: Colors.primary,
     shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.3,
     shadowRadius: 8,

@@ -8,6 +8,7 @@ import {
   Animated,
 } from 'react-native';
 import {FontAwesome5} from '@expo/vector-icons';
+import {LinearGradient} from 'expo-linear-gradient';
 import {Colors} from '../config/theme';
 
 interface ConfirmationModalProps {
@@ -168,11 +169,13 @@ export default function ConfirmationModal({
           </View>
 
           {/* Confirm Button */}
-          <TouchableOpacity style={styles.confirmButton} onPress={onClose}>
-            <FontAwesome5 name="check" size={20} color={Colors.text.inverse} style={styles.confirmIcon} />
-            <Text style={styles.confirmButtonText}>
-              {isPaymentMode ? 'Continuer' : 'Compris'}
-            </Text>
+          <TouchableOpacity style={styles.confirmButtonContainer} onPress={onClose} activeOpacity={0.8}>
+            <LinearGradient colors={Colors.gradient} start={{x: 0, y: 0}} end={{x: 1, y: 0}} style={styles.confirmButton}>
+              <FontAwesome5 name="check" size={20} color={Colors.text.inverse} style={styles.confirmIcon} />
+              <Text style={styles.confirmButtonText}>
+                {isPaymentMode ? 'Continuer' : 'Compris'}
+              </Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
       </View>
@@ -262,14 +265,17 @@ const styles = StyleSheet.create({
     color: Colors.primaryLight,
     fontWeight: 'bold',
   },
+  confirmButtonContainer: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    width: '100%',
+  },
   confirmButton: {
-    backgroundColor: Colors.primary,
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 40,
     flexDirection: 'row',
     alignItems: 'center',
-    width: '100%',
     justifyContent: 'center',
   },
   confirmIcon: {

@@ -63,9 +63,24 @@ export interface Booking {
   price: number;
   status: BookingStatus;
   professional?: string;
+  mission?: {
+    id?: string;
+    status?: string;
+    professional?: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      avatar?: string;
+      phone: string;
+      rating: number;
+      totalMissions: number;
+      isVerified?: boolean;
+    };
+  };
   notes?: string;
   createdAt: string;
   updatedAt?: string;
+  professionalAssigned?: boolean; // True si un pro a été auto-assigné
 }
 
 export interface CreateBookingData {

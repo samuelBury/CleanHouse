@@ -339,15 +339,18 @@ const AuthScreen: React.FC = () => {
                 </Text>
 
                 <TouchableOpacity
-                  style={styles.resendButton}
+                  style={styles.resendButtonContainer}
                   onPress={handleResendVerification}
                   disabled={resendingEmail}
+                  activeOpacity={0.8}
                 >
-                  {resendingEmail ? (
-                    <ActivityIndicator color="#fff" />
-                  ) : (
-                    <Text style={styles.resendButtonText}>Renvoyer l'email</Text>
-                  )}
+                  <LinearGradient colors={Colors.gradient} start={{x: 0, y: 0}} end={{x: 1, y: 0}} style={styles.resendButton}>
+                    {resendingEmail ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <Text style={styles.resendButtonText}>Renvoyer l'email</Text>
+                    )}
+                  </LinearGradient>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -788,7 +791,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   switchLink: {
-    color: 'Colors.primaryLight',
+    color: Colors.primaryLight,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -813,7 +816,7 @@ const styles = StyleSheet.create({
   },
   verificationEmail: {
     fontWeight: 'bold',
-    color: 'Colors.primaryLight',
+    color: Colors.primaryLight,
   },
   verificationSubtext: {
     fontSize: 14,
@@ -821,13 +824,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 24,
   },
+  resendButtonContainer: {
+    borderRadius: 25,
+    overflow: 'hidden',
+    marginBottom: 16,
+    minWidth: 200,
+  },
   resendButton: {
-    backgroundColor: 'Colors.primary',
     paddingHorizontal: 32,
     paddingVertical: 14,
     borderRadius: 25,
-    marginBottom: 16,
-    minWidth: 200,
     alignItems: 'center',
   },
   resendButtonText: {

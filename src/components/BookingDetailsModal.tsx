@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {FontAwesome5} from '@expo/vector-icons';
+import {LinearGradient} from 'expo-linear-gradient';
 import {Colors} from '../config/theme';
 import type {Booking} from '../types';
 
@@ -56,9 +57,9 @@ export default function BookingDetailsModal({
       case 'pending':
         return {label: 'En attente de confirmation', color: '#f59e0b', bg: '#fef3c7', icon: 'hourglass-half'};
       case 'confirmed':
-        return {label: 'Confirmé', color: 'Colors.primaryLight', bg: 'Colors.primaryBackground', icon: 'check'};
+        return {label: 'Confirmé', color: Colors.primaryLight, bg: Colors.primaryBackground, icon: 'check'};
       case 'in_progress':
-        return {label: 'En cours', color: Colors.primary, bg: 'Colors.primaryBackground', icon: 'sync-alt'};
+        return {label: 'En cours', color: Colors.primary, bg: Colors.primaryBackground, icon: 'sync-alt'};
       case 'completed':
         return {label: 'Terminé', color: '#6b7280', bg: '#f3f4f6', icon: 'check'};
       case 'cancelled':
@@ -135,7 +136,7 @@ export default function BookingDetailsModal({
       <View style={[styles.modalOverlay, {paddingTop: insets.top, paddingBottom: insets.bottom}]}>
         <View style={styles.modalContent}>
           {/* Header avec statut */}
-          <View style={styles.header}>
+          <LinearGradient colors={Colors.gradient} start={{x: 0, y: 0}} end={{x: 1, y: 0}} style={styles.header}>
             <View style={styles.headerTop}>
               <View style={styles.headerIcon}>
                 <FontAwesome5 name={getServiceIcon(booking.service)} size={32} color={Colors.primary} />
@@ -151,7 +152,7 @@ export default function BookingDetailsModal({
                 {statusInfo.label}
               </Text>
             </View>
-          </View>
+          </LinearGradient>
 
           <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
             {/* Date et heure */}
@@ -262,7 +263,7 @@ export default function BookingDetailsModal({
                   <Text style={styles.totalValue}>{booking.price}€</Text>
                 </View>
                 <View style={styles.paymentStatus}>
-                  <FontAwesome5 name="check" size={14} color="Colors.primaryLight" style={styles.paymentStatusIcon} />
+                  <FontAwesome5 name="check" size={14} color={Colors.primaryLight} style={styles.paymentStatusIcon} />
                   <Text style={styles.paymentStatusText}>Payé</Text>
                 </View>
               </View>
@@ -294,8 +295,10 @@ export default function BookingDetailsModal({
                 <Text style={styles.cancelButtonText}>Annuler la réservation</Text>
               </TouchableOpacity>
             )}
-            <TouchableOpacity style={styles.closeActionButton} onPress={onClose}>
-              <Text style={styles.closeActionText}>Fermer</Text>
+            <TouchableOpacity style={styles.closeActionButtonContainer} onPress={onClose} activeOpacity={0.8}>
+              <LinearGradient colors={Colors.gradient} start={{x: 0, y: 0}} end={{x: 1, y: 0}} style={styles.closeActionButton}>
+                <Text style={styles.closeActionText}>Fermer</Text>
+              </LinearGradient>
             </TouchableOpacity>
           </View>
         </View>
@@ -315,7 +318,6 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 20,
-    backgroundColor: Colors.primary,
   },
   headerTop: {
     flexDirection: 'row',
@@ -347,7 +349,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: Colors.secondary,
+    color: Colors.text.inverse,
     marginBottom: 8,
   },
   statusRow: {
@@ -549,20 +551,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'Colors.primaryBackground',
+    backgroundColor: Colors.primaryBackground,
     borderRadius: 8,
     padding: 8,
     marginTop: 12,
   },
   paymentStatusIcon: {
     fontSize: 14,
-    color: 'Colors.primaryLight',
+    color: Colors.primaryLight,
     marginRight: 6,
   },
   paymentStatusText: {
     fontSize: 14,
     fontWeight: '600',
-    color: 'Colors.primaryLight',
+    color: Colors.primaryLight,
   },
   infoCard: {
     backgroundColor: Colors.background.secondary,
@@ -609,8 +611,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  closeActionButtonContainer: {
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
   closeActionButton: {
-    backgroundColor: Colors.primary,
     borderRadius: 14,
     padding: 16,
     alignItems: 'center',

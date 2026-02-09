@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { useBooking } from '../context/BookingContext';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Spacing, BorderRadius, Typography, Shadows } from '../config/theme';
 import PaymentMethodsModal from '../components/PaymentMethodsModal';
 import SavedLocationsModal from '../components/SavedLocationsModal';
@@ -81,9 +82,9 @@ const ProfileScreen: React.FC = () => {
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View style={styles.header}>
+        <LinearGradient colors={Colors.gradient} start={{x: 0, y: 0}} end={{x: 1, y: 0}} style={styles.header}>
           <Text style={styles.headerTitle}>Mon Profil</Text>
-        </View>
+        </LinearGradient>
 
         {/* Profile Card */}
         <View style={styles.profileCard}>
@@ -183,10 +184,13 @@ const ProfileScreen: React.FC = () => {
                 <Text style={styles.cancelButtonText}>Annuler</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.saveButton}
+                style={styles.saveButtonContainer}
                 onPress={handleSaveProfile}
+                activeOpacity={0.8}
               >
-                <Text style={styles.saveButtonText}>Enregistrer</Text>
+                <LinearGradient colors={Colors.gradient} start={{x: 0, y: 0}} end={{x: 1, y: 0}} style={styles.saveButton}>
+                  <Text style={styles.saveButtonText}>Enregistrer</Text>
+                </LinearGradient>
               </TouchableOpacity>
             </View>
           </View>
@@ -232,7 +236,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background.secondary,
   },
   header: {
-    backgroundColor: Colors.primary,
     padding: Spacing.lg,
     paddingTop: Spacing.md,
   },
@@ -338,7 +341,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'Colors.primaryBackground',
+    backgroundColor: Colors.primaryBackground,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: Spacing.md,
@@ -428,11 +431,14 @@ const styles = StyleSheet.create({
     color: Colors.text.secondary,
     fontWeight: Typography.weights.medium,
   },
-  saveButton: {
+  saveButtonContainer: {
     flex: 1,
+    borderRadius: BorderRadius.md,
+    overflow: 'hidden',
+  },
+  saveButton: {
     padding: Spacing.md,
     borderRadius: BorderRadius.md,
-    backgroundColor: Colors.primary,
     alignItems: 'center',
   },
   saveButtonText: {

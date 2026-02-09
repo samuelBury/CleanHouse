@@ -27,7 +27,7 @@ const FloatingTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
     <>
       {/* Gradient fade */}
       <LinearGradient
-        colors={['#FFFFFF00', '#FFFFFF', '#FFFFFF']}
+        colors={['transparent', 'rgba(255,255,255,0.7)']}
         style={styles.gradient}
         pointerEvents="none"
       />

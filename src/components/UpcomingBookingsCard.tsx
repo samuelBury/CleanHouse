@@ -1,6 +1,7 @@
 import React from 'react';
-import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
+import {View, Text, StyleSheet, TouchableOpacity, Image} from 'react-native';
 import {FontAwesome5} from '@expo/vector-icons';
+import {LinearGradient} from 'expo-linear-gradient';
 import {Colors} from '../config/theme';
 import HeroCard from './HeroCard';
 import type {Booking} from '../types';
@@ -88,10 +89,10 @@ export default function UpcomingBookingsCard({
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <LinearGradient colors={Colors.gradient} start={{x: 0, y: 0}} end={{x: 1, y: 0}} style={styles.header}>
         <Text style={styles.title}>Prestations à venir</Text>
         <Text style={styles.count}>{upcomingBookings.length}</Text>
-      </View>
+      </LinearGradient>
 
       {upcomingBookings.map((booking, index) => {
         const statusInfo = getStatusLabel(booking.status);
@@ -137,6 +138,42 @@ export default function UpcomingBookingsCard({
                 </View>
               </View>
 
+              {/* Info professionnelle */}
+              {booking.mission?.professional && (
+                <View style={styles.proContainer}>
+                  {booking.mission.professional.avatar ? (
+                    <Image
+                      source={{uri: booking.mission.professional.avatar}}
+                      style={styles.proAvatar}
+                    />
+                  ) : (
+                    <View style={styles.proAvatarPlaceholder}>
+                      <FontAwesome5 name="user" size={14} color={Colors.primary} />
+                    </View>
+                  )}
+                  <View style={styles.proInfo}>
+                    <View style={styles.proNameRow}>
+                      <Text style={styles.proName}>
+                        {booking.mission.professional.firstName} {booking.mission.professional.lastName}
+                      </Text>
+                      {booking.mission.professional.isVerified && (
+                        <FontAwesome5 name="check-circle" size={12} color={Colors.primary} solid />
+                      )}
+                    </View>
+                    <View style={styles.proDetails}>
+                      <FontAwesome5 name="star" size={10} color="#f59e0b" solid />
+                      <Text style={styles.proRating}>{booking.mission.professional.rating.toFixed(1)}</Text>
+                      <Text style={styles.proMissions}>
+                        ({booking.mission.professional.totalMissions} missions)
+                      </Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity style={styles.proPhone}>
+                    <FontAwesome5 name="phone-alt" size={14} color={Colors.primary} />
+                  </TouchableOpacity>
+                </View>
+              )}
+
               <View style={styles.bookingFooter}>
                 <Text style={styles.durationText}>
                   {booking.duration}h de prestation
@@ -172,7 +209,6 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: Colors.secondaryDark,
-    backgroundColor: Colors.secondary,
   },
   title: {
     fontSize: 18,
@@ -259,5 +295,64 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: Colors.primary,
+  },
+  proContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primaryBackground,
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 8,
+  },
+  proAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    marginRight: 10,
+  },
+  proAvatarPlaceholder: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: Colors.background.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  proInfo: {
+    flex: 1,
+  },
+  proNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  proName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.text.primary,
+  },
+  proDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  proRating: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.text.primary,
+  },
+  proMissions: {
+    fontSize: 11,
+    color: Colors.text.secondary,
+  },
+  proPhone: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.background.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

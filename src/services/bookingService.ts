@@ -82,8 +82,16 @@ export const bookingService = {
         date: convertDateToISO(data.date),
       };
       const response = await api.post('/bookings', backendData);
-      const booking = response.data?.data?.booking || response.data?.data;
-      return { success: true, data: convertBookingToFrontend(booking) };
+      const responseData = response.data?.data;
+      const booking = responseData?.booking || responseData;
+      const convertedBooking = convertBookingToFrontend(booking);
+
+      // Ajouter les infos d'assignation si présentes
+      if (responseData?.professionalAssigned !== undefined) {
+        convertedBooking.professionalAssigned = responseData.professionalAssigned;
+      }
+
+      return { success: true, data: convertedBooking };
     } catch (error) {
       return { success: false, error: handleApiError(error) };
     }

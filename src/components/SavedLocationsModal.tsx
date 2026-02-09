@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {FontAwesome5} from '@expo/vector-icons';
+import {LinearGradient} from 'expo-linear-gradient';
 import {Colors, Spacing, BorderRadius, Typography} from '../config/theme';
 import AddressAutocomplete from './AddressAutocomplete';
 import {AddressSuggestion} from '../services/addressService';
@@ -192,12 +193,12 @@ export default function SavedLocationsModal({
       <View style={styles.overlay}>
         <TouchableOpacity style={styles.backdrop} onPress={handleClose} />
         <View style={styles.container}>
-          <View style={styles.header}>
+          <LinearGradient colors={Colors.gradient} start={{x: 0, y: 0}} end={{x: 1, y: 0}} style={styles.header}>
             <Text style={styles.headerTitle}>Lieux enregistrés</Text>
             <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
               <FontAwesome5 name="times" size={16} color={Colors.text.inverse} />
             </TouchableOpacity>
-          </View>
+          </LinearGradient>
 
           <ScrollView
             style={styles.content}
@@ -242,15 +243,17 @@ export default function SavedLocationsModal({
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[
-                      styles.saveButton,
+                      styles.saveButtonContainer,
                       (!locationName.trim() || !selectedAddress) && styles.saveButtonDisabled,
                     ]}
                     onPress={handleSaveLocation}
                     disabled={!locationName.trim() || !selectedAddress}
                   >
-                    <Text style={styles.saveButtonText}>
-                      {editingLocation ? 'Modifier' : 'Ajouter'}
-                    </Text>
+                    <LinearGradient colors={Colors.gradient} start={{x: 0, y: 0}} end={{x: 1, y: 0}} style={styles.saveButton}>
+                      <Text style={styles.saveButtonText}>
+                        {editingLocation ? 'Modifier' : 'Ajouter'}
+                      </Text>
+                    </LinearGradient>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -286,10 +289,12 @@ export default function SavedLocationsModal({
                   <View style={styles.sectionHeader}>
                     <Text style={styles.sectionTitle}>Autres lieux</Text>
                     <TouchableOpacity
-                      style={styles.addButton}
+                      style={styles.addButtonContainer}
                       onPress={handleAddLocation}
                     >
-                      <Text style={styles.addButtonText}>+ Ajouter</Text>
+                      <LinearGradient colors={Colors.gradient} start={{x: 0, y: 0}} end={{x: 1, y: 0}} style={styles.addButton}>
+                        <Text style={styles.addButtonText}>+ Ajouter</Text>
+                      </LinearGradient>
                     </TouchableOpacity>
                   </View>
 
@@ -363,14 +368,13 @@ const styles = StyleSheet.create({
     padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border.light,
-    backgroundColor: Colors.primary,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: Colors.secondary,
+    color: Colors.text.inverse,
   },
   closeButton: {
     width: 32,
@@ -410,8 +414,11 @@ const styles = StyleSheet.create({
     color: Colors.secondary,
     marginBottom: 12,
   },
+  addButtonContainer: {
+    borderRadius: 8,
+    overflow: 'hidden' as const,
+  },
   addButton: {
-    backgroundColor: Colors.primary,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
@@ -538,12 +545,15 @@ const styles = StyleSheet.create({
     color: Colors.text.secondary,
     fontWeight: '600',
   },
-  saveButton: {
+  saveButtonContainer: {
     flex: 1,
+    borderRadius: 12,
+    overflow: 'hidden' as const,
+  },
+  saveButton: {
     padding: 14,
     borderRadius: 12,
-    backgroundColor: Colors.primary,
-    alignItems: 'center',
+    alignItems: 'center' as const,
   },
   saveButtonDisabled: {
     backgroundColor: Colors.border.medium,

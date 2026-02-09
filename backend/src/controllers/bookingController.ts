@@ -4,6 +4,7 @@ import prisma from '../config/database';
 import { asyncHandler, createError } from '../middleware/errorHandler';
 import { SERVICE_PRICES } from '../config/stripe';
 import { ServiceType, BookingStatus } from '@prisma/client';
+import { autoAssignProfessional } from '../services/autoAssignmentService';
 
 // Noms de professionnels simulés
 const PROFESSIONALS = [
@@ -59,6 +60,24 @@ export const getBookings = asyncHandler(async (req: Request, res: Response) => {
       orderBy: { date: 'desc' },
       skip,
       take: Number(limit),
+      include: {
+        mission: {
+          include: {
+            professional: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                avatar: true,
+                phone: true,
+                rating: true,
+                totalMissions: true,
+                isVerified: true,
+              },
+            },
+          },
+        },
+      },
     }),
     prisma.booking.count({ where }),
   ]);
@@ -142,7 +161,7 @@ export const createBooking = asyncHandler(async (req: Request, res: Response) =>
     },
   });
 
-  // Créer automatiquement une mission en attente d'assignation par l'admin
+  // Créer automatiquement une mission en attente d'assignation
   await prisma.mission.create({
     data: {
       bookingId: booking.id,
@@ -151,9 +170,38 @@ export const createBooking = asyncHandler(async (req: Request, res: Response) =>
     },
   });
 
+  // Auto-assigner un professionnel disponible
+  const assignmentResult = await autoAssignProfessional(booking.id);
+
+  // Recharger le booking avec les données du professionnel si assigné
+  const updatedBooking = await prisma.booking.findUnique({
+    where: { id: booking.id },
+    include: {
+      mission: {
+        include: {
+          professional: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              phone: true,
+              rating: true,
+              totalMissions: true,
+              avatar: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
   res.status(201).json({
     success: true,
-    data: { booking },
+    data: {
+      booking: updatedBooking,
+      professionalAssigned: assignmentResult.success,
+      assignmentReason: assignmentResult.reason,
+    },
   });
 });
 

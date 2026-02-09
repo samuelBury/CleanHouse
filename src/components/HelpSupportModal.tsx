@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import {FontAwesome5} from '@expo/vector-icons';
+import {LinearGradient} from 'expo-linear-gradient';
 import {Colors, Spacing, BorderRadius, Typography} from '../config/theme';
 
 interface HelpSupportModalProps {
@@ -237,17 +238,19 @@ export default function HelpSupportModal({
 
       <TouchableOpacity
         style={[
-          styles.sendButton,
+          styles.sendButtonContainer,
           (!contactSubject || !contactMessage) && styles.sendButtonDisabled,
         ]}
         onPress={handleSendMessage}
         disabled={sending || !contactSubject || !contactMessage}
       >
-        {sending ? (
-          <ActivityIndicator color={Colors.text.inverse} />
-        ) : (
-          <Text style={styles.sendButtonText}>Envoyer</Text>
-        )}
+        <LinearGradient colors={Colors.gradient} start={{x: 0, y: 0}} end={{x: 1, y: 0}} style={styles.sendButton}>
+          {sending ? (
+            <ActivityIndicator color={Colors.text.inverse} />
+          ) : (
+            <Text style={styles.sendButtonText}>Envoyer</Text>
+          )}
+        </LinearGradient>
       </TouchableOpacity>
     </View>
   );
@@ -262,12 +265,12 @@ export default function HelpSupportModal({
       <View style={styles.overlay}>
         <TouchableOpacity style={styles.backdrop} onPress={handleClose} />
         <View style={styles.container}>
-          <View style={styles.header}>
+          <LinearGradient colors={Colors.gradient} start={{x: 0, y: 0}} end={{x: 1, y: 0}} style={styles.header}>
             <Text style={styles.headerTitle}>Aide et support</Text>
             <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
               <FontAwesome5 name="times" size={16} color={Colors.text.inverse} />
             </TouchableOpacity>
-          </View>
+          </LinearGradient>
 
           <ScrollView
             style={styles.content}
@@ -306,14 +309,13 @@ const styles = StyleSheet.create({
     padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border.light,
-    backgroundColor: Colors.primary,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: Colors.secondary,
+    color: Colors.text.inverse,
   },
   closeButton: {
     width: 32,
@@ -345,7 +347,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'Colors.primaryBackground',
+    backgroundColor: Colors.primaryBackground,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
@@ -444,12 +446,15 @@ const styles = StyleSheet.create({
     minHeight: 120,
     paddingTop: 14,
   },
+  sendButtonContainer: {
+    borderRadius: 12,
+    overflow: 'hidden' as const,
+    marginTop: 24,
+  },
   sendButton: {
-    backgroundColor: Colors.primary,
     padding: 16,
     borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 24,
+    alignItems: 'center' as const,
   },
   sendButtonDisabled: {
     backgroundColor: Colors.border.medium,

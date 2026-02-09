@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {FontAwesome5} from '@expo/vector-icons';
+import {LinearGradient} from 'expo-linear-gradient';
 import {Colors} from '../config/theme';
 
 // Conditionally import Stripe (not available in Expo Go)
@@ -153,7 +154,7 @@ export default function CardInputModal({
             />
             <View style={[styles.modalContent, {paddingBottom: insets.bottom + 20}]}>
               {/* Modal Header */}
-              <View style={styles.modalHeader}>
+              <LinearGradient colors={Colors.gradient} start={{x: 0, y: 0}} end={{x: 1, y: 0}} style={styles.modalHeader}>
                 <View style={styles.modalHeaderIcon}>
                   <FontAwesome5 name="credit-card" size={20} color="#fff" />
                 </View>
@@ -168,20 +169,29 @@ export default function CardInputModal({
                 >
                   <FontAwesome5 name="times" size={18} color={Colors.text.inverse} />
                 </TouchableOpacity>
-              </View>
+              </LinearGradient>
 
               {/* Card Form */}
               <View style={styles.formContainer}>
                 {!stripeAvailable ? (
                   <View style={styles.stripeUnavailable}>
-                    <FontAwesome5 name="exclamation-triangle" size={48} color="#f59e0b" />
-                    <Text style={styles.stripeUnavailableTitle}>Paiement non disponible</Text>
+                    <FontAwesome5 name="flask" size={48} color="#f59e0b" />
+                    <Text style={styles.stripeUnavailableTitle}>Mode Expo Go</Text>
                     <Text style={styles.stripeUnavailableText}>
                       Le paiement par carte n'est pas disponible dans Expo Go.
-                      Veuillez utiliser un development build pour activer les paiements.
+                      Vous pouvez simuler le paiement pour tester le flow.
                     </Text>
-                    <TouchableOpacity style={styles.closeButtonAlt} onPress={onClose}>
-                      <Text style={styles.closeButtonAltText}>Fermer</Text>
+                    <TouchableOpacity
+                      style={styles.closeButtonAltContainer}
+                      onPress={() => onSuccess(`sim_${Date.now()}`, false)}
+                      activeOpacity={0.8}
+                    >
+                      <LinearGradient colors={Colors.gradient} start={{x: 0, y: 0}} end={{x: 1, y: 0}} style={styles.closeButtonAlt}>
+                        <Text style={styles.closeButtonAltText}>Simuler le paiement</Text>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={{marginTop: 12}} onPress={onClose}>
+                      <Text style={{color: Colors.text.secondary, fontSize: 14}}>Annuler</Text>
                     </TouchableOpacity>
                   </View>
                 ) : (
@@ -243,17 +253,20 @@ export default function CardInputModal({
                     {/* Bouton de confirmation */}
                     <TouchableOpacity
                       style={[
-                        styles.confirmButton,
+                        styles.confirmButtonContainer,
                         (!cardComplete || !cardholderName.trim() || isLoading) && styles.confirmButtonDisabled,
                       ]}
                       onPress={handleSubmit}
                       disabled={!cardComplete || !cardholderName.trim() || isLoading}
+                      activeOpacity={0.8}
                     >
-                      {isLoading ? (
-                        <ActivityIndicator color="#fff" />
-                      ) : (
-                        <Text style={styles.confirmButtonText}>Payer {amount}</Text>
-                      )}
+                      <LinearGradient colors={Colors.gradient} start={{x: 0, y: 0}} end={{x: 1, y: 0}} style={styles.confirmButton}>
+                        {isLoading ? (
+                          <ActivityIndicator color="#fff" />
+                        ) : (
+                          <Text style={styles.confirmButtonText}>Payer {amount}</Text>
+                        )}
+                      </LinearGradient>
                     </TouchableOpacity>
                   </>
                 )}
@@ -290,7 +303,6 @@ const styles = StyleSheet.create({
     padding: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.secondary,
   },
   modalHeaderIcon: {
     width: 40,
@@ -413,8 +425,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.text.secondary,
   },
+  confirmButtonContainer: {
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
   confirmButton: {
-    backgroundColor: Colors.primary,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -445,9 +460,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
-  closeButtonAlt: {
+  closeButtonAltContainer: {
     marginTop: 24,
-    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  closeButtonAlt: {
     paddingHorizontal: 32,
     paddingVertical: 12,
     borderRadius: 12,

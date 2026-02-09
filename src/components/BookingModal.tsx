@@ -304,7 +304,7 @@ export default function BookingModal({visible, onClose, onConfirm, service}: Boo
         />
         <View style={styles.modalContent}>
           {/* Modal Header */}
-          <View style={styles.modalHeader}>
+          <LinearGradient colors={Colors.gradient} start={{x: 0, y: 0}} end={{x: 1, y: 0}} style={styles.modalHeader}>
             <View style={styles.modalHeaderIcon}>
               <FontAwesome5
                 name={service === 'Ménage' ? 'home' : service === 'Repassage' ? 'tshirt' : 'magic'}
@@ -322,7 +322,7 @@ export default function BookingModal({visible, onClose, onConfirm, service}: Boo
             <TouchableOpacity style={styles.modalCloseButton} onPress={onClose}>
               <FontAwesome5 name="times" size={16} color={Colors.text.inverse} />
             </TouchableOpacity>
-          </View>
+          </LinearGradient>
 
           {/* Form Fields */}
           <ScrollView
@@ -341,18 +341,20 @@ export default function BookingModal({visible, onClose, onConfirm, service}: Boo
               </View>
               <View style={styles.addressButtonsRow}>
                 <Pressable
-                  style={styles.currentLocationButton}
+                  style={styles.currentLocationButtonContainer}
                   onPress={getCurrentLocation}
                   disabled={loadingLocation}
                 >
-                  {loadingLocation ? (
-                    <ActivityIndicator size="small" color={Colors.text.inverse} />
-                  ) : (
-                    <>
-                      <FontAwesome5 name="crosshairs" size={12} color={Colors.text.inverse} />
-                      <Text style={styles.currentLocationButtonText}>Ma position</Text>
-                    </>
-                  )}
+                  <LinearGradient colors={Colors.gradient} start={{x: 0, y: 0}} end={{x: 1, y: 0}} style={styles.currentLocationButton}>
+                    {loadingLocation ? (
+                      <ActivityIndicator size="small" color={Colors.text.inverse} />
+                    ) : (
+                      <>
+                        <FontAwesome5 name="crosshairs" size={12} color={Colors.text.inverse} />
+                        <Text style={styles.currentLocationButtonText}>Ma position</Text>
+                      </>
+                    )}
+                  </LinearGradient>
                 </Pressable>
                 <Pressable
                   style={styles.myLocationsButton}
@@ -362,9 +364,11 @@ export default function BookingModal({visible, onClose, onConfirm, service}: Boo
                   <Text style={styles.myLocationsButtonText}>Mes lieux</Text>
                 </Pressable>
                 {savedHomeAddress && (
-                  <Pressable style={styles.useHomeButton} onPress={useHomeAddress}>
-                    <FontAwesome5 name="home" size={12} color={Colors.text.inverse} />
-                    <Text style={styles.useHomeButtonText}>Domicile</Text>
+                  <Pressable style={styles.useHomeButtonContainer} onPress={useHomeAddress}>
+                    <LinearGradient colors={Colors.gradient} start={{x: 0, y: 0}} end={{x: 1, y: 0}} style={styles.useHomeButton}>
+                      <FontAwesome5 name="home" size={12} color={Colors.text.inverse} />
+                      <Text style={styles.useHomeButtonText}>Domicile</Text>
+                    </LinearGradient>
                   </Pressable>
                 )}
               </View>
@@ -409,7 +413,7 @@ export default function BookingModal({visible, onClose, onConfirm, service}: Boo
                       />
                       <TouchableOpacity
                         style={[
-                          styles.saveLocationButton,
+                          styles.saveLocationButtonContainer,
                           !locationName.trim() && styles.saveLocationButtonDisabled,
                         ]}
                         onPress={() => {
@@ -420,8 +424,11 @@ export default function BookingModal({visible, onClose, onConfirm, service}: Boo
                           }
                         }}
                         disabled={!locationName.trim()}
+                        activeOpacity={0.8}
                       >
-                        <Text style={styles.saveLocationButtonText}>Enregistrer</Text>
+                        <LinearGradient colors={Colors.gradient} start={{x: 0, y: 0}} end={{x: 1, y: 0}} style={styles.saveLocationButton}>
+                          <Text style={styles.saveLocationButtonText}>Enregistrer</Text>
+                        </LinearGradient>
                       </TouchableOpacity>
                     </View>
                   )}
@@ -694,7 +701,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     position: 'relative',
-    backgroundColor: Colors.secondary,
   },
   modalHeaderIcon: {
     width: 40,
@@ -746,8 +752,12 @@ const styles = StyleSheet.create({
     zIndex: 1001,
     position: 'relative',
   },
+  useHomeButtonContainer: {
+    borderRadius: 8,
+    overflow: 'hidden',
+    height: 32,
+  },
   useHomeButton: {
-    backgroundColor: Colors.primary,
     height: 32,
     borderRadius: 8,
     alignItems: 'center',
@@ -761,8 +771,13 @@ const styles = StyleSheet.create({
     color: Colors.text.inverse,
     fontWeight: '600',
   },
+  currentLocationButtonContainer: {
+    borderRadius: 8,
+    overflow: 'hidden',
+    height: 32,
+    minWidth: 100,
+  },
   currentLocationButton: {
-    backgroundColor: Colors.status.info,
     height: 32,
     borderRadius: 8,
     alignItems: 'center',
@@ -770,7 +785,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     flexDirection: 'row',
     gap: 5,
-    minWidth: 100,
   },
   currentLocationButtonText: {
     fontSize: 12,
@@ -834,14 +848,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border.light,
   },
+  saveLocationButtonContainer: {
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
   saveLocationButton: {
-    backgroundColor: Colors.primary,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 8,
   },
   saveLocationButtonDisabled: {
-    backgroundColor: Colors.border.medium,
+    opacity: 0.5,
   },
   saveLocationButtonText: {
     color: Colors.text.inverse,
@@ -1057,7 +1074,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     borderRadius: 30,
     overflow: 'hidden',
-    shadowColor: 'Colors.primary',
+    shadowColor: Colors.primary,
     shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.3,
     shadowRadius: 8,

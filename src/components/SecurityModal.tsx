@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import {FontAwesome5} from '@expo/vector-icons';
+import {LinearGradient} from 'expo-linear-gradient';
 import {Colors, Spacing, BorderRadius, Typography} from '../config/theme';
 import {useAuth} from '../context/AuthContext';
 
@@ -222,17 +223,19 @@ export default function SecurityModal({
 
       <TouchableOpacity
         style={[
-          styles.submitButton,
+          styles.submitButtonContainer,
           (!currentPassword || !newPassword || !confirmPassword) && styles.submitButtonDisabled,
         ]}
         onPress={handleChangePassword}
         disabled={loading || !currentPassword || !newPassword || !confirmPassword}
       >
-        {loading ? (
-          <ActivityIndicator color={Colors.text.inverse} />
-        ) : (
-          <Text style={styles.submitButtonText}>Changer le mot de passe</Text>
-        )}
+        <LinearGradient colors={Colors.gradient} start={{x: 0, y: 0}} end={{x: 1, y: 0}} style={styles.submitButton}>
+          {loading ? (
+            <ActivityIndicator color={Colors.text.inverse} />
+          ) : (
+            <Text style={styles.submitButtonText}>Changer le mot de passe</Text>
+          )}
+        </LinearGradient>
       </TouchableOpacity>
     </View>
   );
@@ -310,12 +313,12 @@ export default function SecurityModal({
       <View style={styles.overlay}>
         <TouchableOpacity style={styles.backdrop} onPress={handleClose} />
         <View style={styles.container}>
-          <View style={styles.header}>
+          <LinearGradient colors={Colors.gradient} start={{x: 0, y: 0}} end={{x: 1, y: 0}} style={styles.header}>
             <Text style={styles.headerTitle}>Sécurité</Text>
             <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
               <FontAwesome5 name="times" size={16} color={Colors.text.inverse} />
             </TouchableOpacity>
-          </View>
+          </LinearGradient>
 
           <ScrollView
             style={styles.content}
@@ -354,14 +357,13 @@ const styles = StyleSheet.create({
     padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border.light,
-    backgroundColor: Colors.primary,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: Colors.secondary,
+    color: Colors.text.inverse,
   },
   closeButton: {
     width: 32,
@@ -453,12 +455,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border.light,
   },
+  submitButtonContainer: {
+    borderRadius: 12,
+    overflow: 'hidden' as const,
+    marginTop: 24,
+  },
   submitButton: {
-    backgroundColor: Colors.primary,
     padding: 16,
     borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 24,
+    alignItems: 'center' as const,
   },
   submitButtonDisabled: {
     backgroundColor: Colors.border.medium,

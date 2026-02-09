@@ -1,6 +1,7 @@
 import React from 'react';
 import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
 import {FontAwesome5} from '@expo/vector-icons';
+import {LinearGradient} from 'expo-linear-gradient';
 import {Colors} from '../config/theme';
 import type {Booking} from '../types';
 
@@ -28,8 +29,10 @@ export default function BookingSection({reservations = [], onBookingPress}: Book
           <View key={booking.id} style={styles.bookingCard}>
             <View style={styles.bookingHeader}>
               <Text style={styles.bookingTitle}>{booking.service}</Text>
-              <TouchableOpacity style={styles.confirmButton} onPress={() => onBookingPress?.(booking)}>
-                <Text style={styles.confirmButtonText}>Voir</Text>
+              <TouchableOpacity style={styles.confirmButtonContainer} onPress={() => onBookingPress?.(booking)} activeOpacity={0.8}>
+                <LinearGradient colors={Colors.gradient} start={{x: 0, y: 0}} end={{x: 1, y: 0}} style={styles.confirmButton}>
+                  <Text style={styles.confirmButtonText}>Voir</Text>
+                </LinearGradient>
               </TouchableOpacity>
             </View>
             <Text style={styles.bookingDate}>
@@ -85,8 +88,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.text.primary,
   },
+  confirmButtonContainer: {
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
   confirmButton: {
-    backgroundColor: Colors.secondary,
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderRadius: 20,

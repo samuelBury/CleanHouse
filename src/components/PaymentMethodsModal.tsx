@@ -10,6 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import {FontAwesome5} from '@expo/vector-icons';
+import {LinearGradient} from 'expo-linear-gradient';
 import {Colors} from '../config/theme';
 import {paymentService} from '../services/paymentService';
 import type {PaymentMethod} from '../types';
@@ -97,12 +98,12 @@ export default function PaymentMethodsModal({
       <View style={styles.overlay}>
         <TouchableOpacity style={styles.backdrop} onPress={onClose} />
         <View style={styles.container}>
-          <View style={styles.header}>
+          <LinearGradient colors={Colors.gradient} start={{x: 0, y: 0}} end={{x: 1, y: 0}} style={styles.header}>
             <Text style={styles.headerTitle}>Moyens de paiement</Text>
             <TouchableOpacity style={styles.closeButton} onPress={onClose}>
               <FontAwesome5 name="times" size={16} color={Colors.text.inverse} />
             </TouchableOpacity>
-          </View>
+          </LinearGradient>
 
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
             {loading ? (
@@ -191,14 +192,13 @@ const styles = StyleSheet.create({
     padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border.light,
-    backgroundColor: Colors.primary,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: Colors.secondary,
+    color: Colors.text.inverse,
   },
   closeButton: {
     width: 32,

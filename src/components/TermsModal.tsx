@@ -8,6 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import {FontAwesome5} from '@expo/vector-icons';
+import {LinearGradient} from 'expo-linear-gradient';
 import {Colors} from '../config/theme';
 
 interface TermsModalProps {
@@ -239,12 +240,12 @@ export default function TermsModal({
       <View style={styles.overlay}>
         <TouchableOpacity style={styles.backdrop} onPress={handleClose} />
         <View style={styles.container}>
-          <View style={styles.header}>
+          <LinearGradient colors={Colors.gradient} start={{x: 0, y: 0}} end={{x: 1, y: 0}} style={styles.header}>
             <Text style={styles.headerTitle}>Documents légaux</Text>
             <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
               <FontAwesome5 name="times" size={16} color={Colors.text.inverse} />
             </TouchableOpacity>
-          </View>
+          </LinearGradient>
 
           {/* Tabs */}
           <View style={styles.tabsContainer}>
@@ -303,14 +304,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 20,
-    backgroundColor: Colors.primary,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: Colors.secondary,
+    color: Colors.text.inverse,
   },
   closeButton: {
     width: 32,

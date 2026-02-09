@@ -1,11 +1,71 @@
-import React from 'react';
-import {View, Text, Image, TouchableOpacity, StyleSheet} from 'react-native';
+import React, {useEffect, useRef} from 'react';
+import {View, Text, Image, TouchableOpacity, StyleSheet, Animated, Easing} from 'react-native';
 import {FontAwesome5} from '@expo/vector-icons';
+import {LinearGradient} from 'expo-linear-gradient';
 import {Colors} from '../config/theme';
 
 interface ServicesSectionProps {
   onServiceSelect: (service: string) => void;
 }
+
+// Composant pour le dégradé animé horizontalement
+const AnimatedGradientBar = ({children, style}: {children: React.ReactNode; style?: any}) => {
+  const animatedValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.timing(animatedValue, {
+        toValue: 1,
+        duration: 4000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [animatedValue]);
+
+  // Dégradé seamless - le pattern se répète tous les 300px, translation = 300px
+  const translateX = animatedValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -300],
+  });
+
+  return (
+    <View style={[style, {overflow: 'hidden'}]}>
+      <Animated.View
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          bottom: 0,
+          width: 900,
+          transform: [{translateX}],
+        }}
+      >
+        <LinearGradient
+          colors={[
+            Colors.gradient[0],
+            Colors.gradient[1],
+            Colors.gradient[2],
+            Colors.gradient[0],
+            Colors.gradient[1],
+            Colors.gradient[2],
+            Colors.gradient[0],
+            Colors.gradient[1],
+            Colors.gradient[2],
+            Colors.gradient[0],
+          ]}
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 0}}
+          locations={[0, 1/9, 2/9, 3/9, 4/9, 5/9, 6/9, 7/9, 8/9, 1]}
+          style={{flex: 1}}
+        />
+      </Animated.View>
+      <View style={styles.gradientContent}>{children}</View>
+    </View>
+  );
+};
 
 export default function ServicesSection({onServiceSelect}: ServicesSectionProps) {
   return (
@@ -29,21 +89,21 @@ export default function ServicesSection({onServiceSelect}: ServicesSectionProps)
               <Text style={styles.priceBadgeText}>15€/h</Text>
             </View>
           </View>
-          {/* Barre blanche en bas */}
-          <View style={styles.whiteBar}>
+          {/* Barre dégradée animée en bas */}
+          <AnimatedGradientBar style={styles.gradientBar}>
             <View style={styles.serviceInfo}>
               <View style={styles.iconContainer}>
                 <FontAwesome5 name="home" size={14} color={Colors.primary} solid />
               </View>
               <View>
-                <Text style={styles.serviceTitle}>Ménage</Text>
-                <Text style={styles.serviceSubtitle}>Nettoyage{'\n'}complet</Text>
+                <Text style={styles.serviceTitleWhite}>Ménage</Text>
+                <Text style={styles.serviceSubtitleWhite}>Nettoyage{'\n'}complet</Text>
               </View>
             </View>
-            <View style={styles.arrowButton}>
-              <FontAwesome5 name="chevron-right" size={10} color={Colors.text.inverse} />
+            <View style={styles.arrowButtonWhite}>
+              <FontAwesome5 name="chevron-right" size={10} color={Colors.primary} />
             </View>
-          </View>
+          </AnimatedGradientBar>
         </TouchableOpacity>
 
         {/* Carte Repassage */}
@@ -62,21 +122,21 @@ export default function ServicesSection({onServiceSelect}: ServicesSectionProps)
               <Text style={styles.priceBadgeText}>10€/h</Text>
             </View>
           </View>
-          {/* Barre blanche en bas */}
-          <View style={styles.whiteBar}>
+          {/* Barre dégradée animée en bas */}
+          <AnimatedGradientBar style={styles.gradientBar}>
             <View style={styles.serviceInfo}>
               <View style={styles.iconContainer}>
                 <FontAwesome5 name="tshirt" size={14} color={Colors.primary} solid />
               </View>
               <View>
-                <Text style={styles.serviceTitle}>Repassage</Text>
-                <Text style={styles.serviceSubtitle}>Vêtements impeccables</Text>
+                <Text style={styles.serviceTitleWhite}>Repassage</Text>
+                <Text style={styles.serviceSubtitleWhite}>Vêtements impeccables</Text>
               </View>
             </View>
-            <View style={styles.arrowButton}>
-              <FontAwesome5 name="chevron-right" size={10} color={Colors.text.inverse} />
+            <View style={styles.arrowButtonWhite}>
+              <FontAwesome5 name="chevron-right" size={10} color={Colors.primary} />
             </View>
-          </View>
+          </AnimatedGradientBar>
         </TouchableOpacity>
       </View>
 
@@ -96,21 +156,21 @@ export default function ServicesSection({onServiceSelect}: ServicesSectionProps)
             <Text style={styles.priceBadgeText}>20€/h</Text>
           </View>
         </View>
-        {/* Barre blanche en bas */}
-        <View style={styles.whiteBarFull}>
+        {/* Barre dégradée animée en bas */}
+        <AnimatedGradientBar style={styles.gradientBarFull}>
           <View style={styles.serviceInfo}>
             <View style={styles.iconContainer}>
               <FontAwesome5 name="magic" size={14} color={Colors.primary} solid />
             </View>
             <View>
-              <Text style={styles.serviceTitle}>Ménage & Repassage</Text>
-              <Text style={styles.serviceSubtitle}>Pack complet économique</Text>
+              <Text style={styles.serviceTitleWhite}>Ménage & Repassage</Text>
+              <Text style={styles.serviceSubtitleWhite}>Pack complet économique</Text>
             </View>
           </View>
-          <View style={styles.arrowButton}>
-            <FontAwesome5 name="chevron-right" size={10} color={Colors.text.inverse} />
+          <View style={styles.arrowButtonWhite}>
+            <FontAwesome5 name="chevron-right" size={10} color={Colors.primary} />
           </View>
-        </View>
+        </AnimatedGradientBar>
       </TouchableOpacity>
     </View>
   );
@@ -166,8 +226,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
-  whiteBar: {
-    backgroundColor: Colors.background.primary,
+  gradientBar: {
+    height: 65,
+    overflow: 'hidden',
+  },
+  gradientContent: {
+    flex: 1,
     paddingHorizontal: 12,
     paddingVertical: 12,
     flexDirection: 'row',
@@ -193,8 +257,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  serviceTitleWhite: {
+    color: Colors.text.inverse,
+    fontSize: 14,
+    fontWeight: '600',
+  },
   serviceSubtitle: {
     color: Colors.text.tertiary,
+    fontSize: 11,
+    marginTop: 1,
+  },
+  serviceSubtitleWhite: {
+    color: 'rgba(255,255,255,0.85)',
     fontSize: 11,
     marginTop: 1,
   },
@@ -202,7 +276,14 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: Colors.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  arrowButtonWhite: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.background.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -225,12 +306,8 @@ const styles = StyleSheet.create({
     height: '100%',
     resizeMode: 'cover',
   },
-  whiteBarFull: {
-    backgroundColor: Colors.background.primary,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  gradientBarFull: {
+    height: 55,
+    overflow: 'hidden',
   },
 });
