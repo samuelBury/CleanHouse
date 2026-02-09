@@ -107,6 +107,22 @@ export const bookingService = {
     }
   },
 
+  // Retry auto-assignment for a booking
+  async retryAssignment(id: string): Promise<ApiResponse<Booking & { professionalAssigned?: boolean }>> {
+    try {
+      const response = await api.post(`/bookings/${id}/retry-assignment`);
+      const responseData = response.data?.data;
+      const booking = responseData?.booking || responseData;
+      const converted = convertBookingToFrontend(booking);
+      if (responseData?.professionalAssigned !== undefined) {
+        converted.professionalAssigned = responseData.professionalAssigned;
+      }
+      return { success: true, data: converted };
+    } catch (error) {
+      return { success: false, error: handleApiError(error) };
+    }
+  },
+
   // Cancel booking
   async cancelBooking(id: string): Promise<ApiResponse<Booking>> {
     try {

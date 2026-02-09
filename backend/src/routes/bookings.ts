@@ -9,6 +9,7 @@ import {
   getUpcomingBookings,
   getBookingHistory,
   getProLocationForMission,
+  retryAssignment,
 } from '../controllers/bookingController';
 import { authenticate } from '../middleware/auth';
 import {
@@ -41,6 +42,9 @@ router.get('/:id', validate(uuidParamValidation), getBooking);
 
 // Mettre à jour une réservation
 router.put('/:id', validate(updateBookingValidation), updateBooking);
+
+// Relancer l'auto-assignation
+router.post('/:id/retry-assignment', validate(uuidParamValidation), retryAssignment);
 
 // Annuler une réservation
 router.delete('/:id', validate(uuidParamValidation), cancelBooking);

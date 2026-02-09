@@ -205,6 +205,93 @@ export const createBooking = asyncHandler(async (req: Request, res: Response) =>
   });
 });
 
+// Relancer l'auto-assignation pour un booking sans professionnel
+export const retryAssignment = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const userId = req.user!.id;
+
+  // Vérifier que le booking existe et appartient à l'utilisateur
+  const booking = await prisma.booking.findFirst({
+    where: { id, userId },
+    include: {
+      mission: {
+        include: {
+          professional: true,
+        },
+      },
+    },
+  });
+
+  if (!booking) {
+    throw createError('Réservation non trouvée', 404);
+  }
+
+  // Si un pro est déjà assigné, retourner directement
+  if (booking.mission?.professional) {
+    const updatedBooking = await prisma.booking.findUnique({
+      where: { id },
+      include: {
+        mission: {
+          include: {
+            professional: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                phone: true,
+                rating: true,
+                totalMissions: true,
+                avatar: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return res.json({
+      success: true,
+      data: {
+        booking: updatedBooking,
+        professionalAssigned: true,
+      },
+    });
+  }
+
+  // Relancer l'auto-assignation
+  const assignmentResult = await autoAssignProfessional(booking.id);
+
+  const updatedBooking = await prisma.booking.findUnique({
+    where: { id },
+    include: {
+      mission: {
+        include: {
+          professional: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              phone: true,
+              rating: true,
+              totalMissions: true,
+              avatar: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  res.json({
+    success: true,
+    data: {
+      booking: updatedBooking,
+      professionalAssigned: assignmentResult.success,
+      assignmentReason: assignmentResult.reason,
+    },
+  });
+});
+
 // Mettre à jour une réservation
 export const updateBooking = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;

@@ -1,5 +1,5 @@
 // Écran d'accueil principal
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   ScrollView,
@@ -24,6 +24,7 @@ import NotificationsModal, { Notification } from '../components/NotificationsMod
 
 import { useAuth } from '../context/AuthContext';
 import { useBooking } from '../context/BookingContext';
+import { bookingService } from '../services/bookingService';
 import { useNotifications } from '../hooks/useNotifications';
 import { Colors } from '../config/theme';
 import type { ServiceType, Booking } from '../types';
@@ -114,6 +115,15 @@ const HomeScreen: React.FC = () => {
     setShowPaymentModal(true);
   };
 
+  const retryIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Stopper le polling quand le composant unmount
+  useEffect(() => {
+    return () => {
+      if (retryIntervalRef.current) clearInterval(retryIntervalRef.current);
+    };
+  }, []);
+
   const handlePaymentConfirm = async (paymentIntentId: string) => {
     setShowPaymentModal(false);
     setShowSearching(true);
@@ -128,35 +138,48 @@ const HomeScreen: React.FC = () => {
           address: bookingAddress,
           paymentIntentId,
         });
-        await fetchBookings();
 
-        // Vérifier si un professionnel a été assigné
+        const bookingId = result.booking?.id;
         const professional = result.booking?.mission?.professional;
 
         if (professional) {
-          // Pro trouvé → afficher confirmation avec le nom du pro
+          // Pro trouvé immédiatement
+          await fetchBookings();
           addNotification(
             'booking_created',
             'Réservation confirmée',
             `${professional.firstName} s'occupera de votre prestation du ${bookingDate} à ${bookingTime}.`
           );
-          // Petit délai pour une meilleure UX (transition visuelle)
-          setTimeout(() => {
-            setShowSearching(false);
-            setShowConfirmation(true);
-          }, 1500);
+          setShowSearching(false);
+          setShowConfirmation(true);
+        } else if (bookingId) {
+          // Pas de pro → lancer le polling toutes les 5 secondes
+          retryIntervalRef.current = setInterval(async () => {
+            try {
+              const retryResult = await bookingService.retryAssignment(bookingId);
+              const pro = retryResult.data?.mission?.professional;
+
+              if (pro) {
+                // Pro trouvé !
+                if (retryIntervalRef.current) clearInterval(retryIntervalRef.current);
+                retryIntervalRef.current = null;
+                await fetchBookings();
+                addNotification(
+                  'booking_created',
+                  'Réservation confirmée',
+                  `${pro.firstName} s'occupera de votre prestation du ${bookingDate} à ${bookingTime}.`
+                );
+                setShowSearching(false);
+                setShowConfirmation(true);
+              }
+            } catch (err) {
+              // Ignorer les erreurs de retry, on continue à chercher
+              console.log('[Searching] Retry failed, will try again...');
+            }
+          }, 5000);
         } else {
-          // Pas de pro disponible → créer quand même la notification et montrer confirmation
-          addNotification(
-            'booking_created',
-            'Réservation confirmée',
-            `Votre prestation ${selectedService} du ${bookingDate} à ${bookingTime} a été réservée. Nous recherchons un professionnel.`
-          );
-          // Montrer la recherche un peu plus longtemps puis la confirmation
-          setTimeout(() => {
-            setShowSearching(false);
-            setShowConfirmation(true);
-          }, 3000);
+          // Erreur de création
+          setShowSearching(false);
         }
       } catch (error) {
         setShowSearching(false);
