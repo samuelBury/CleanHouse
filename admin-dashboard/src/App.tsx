@@ -11,7 +11,10 @@ import Professionals from './pages/Professionals';
 import Urgencies from './pages/Urgencies';
 import AuditLogs from './pages/AuditLogs';
 import ProSetup from './pages/ProSetup';
+import ProForgotPassword from './pages/ProForgotPassword';
+import ProResetPassword from './pages/ProResetPassword';
 import LiveMap from './pages/LiveMap';
+import ProZones from './pages/ProZones';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -55,6 +58,8 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <Login />} />
       <Route path="/pro/setup" element={<ProSetup />} />
+      <Route path="/pro/forgot-password" element={<ProForgotPassword />} />
+      <Route path="/pro/reset-password" element={<ProResetPassword />} />
       <Route
         element={
           <ProtectedRoute>
@@ -65,6 +70,7 @@ function AppRoutes() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/missions" element={<Missions />} />
         <Route path="/live-map" element={<LiveMap />} />
+        <Route path="/pro-zones" element={<ProZones />} />
         <Route path="/urgencies" element={<Urgencies />} />
         <Route path="/zones" element={<Zones />} />
         <Route path="/professionals" element={<Professionals />} />

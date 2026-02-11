@@ -271,6 +271,9 @@ export interface ProfessionalLocation {
     updatedAt: string;
   };
   isSharing: boolean;
+  homeLocation: { latitude: number; longitude: number } | null;
+  radius: number | null;
+  address: string | null;
   currentMission: {
     id: string;
     address: string;
@@ -323,6 +326,14 @@ export const validateInvitationToken = async (token: string): Promise<{ professi
 
 export const setupProfessionalAccount = async (data: { token: string; password: string; pseudonyme: string }): Promise<void> => {
   await proApi.post('/setup-account', data);
+};
+
+export const requestPasswordReset = async (email: string): Promise<void> => {
+  await proApi.post('/forgot-password', { email });
+};
+
+export const resetProPassword = async (token: string, password: string): Promise<void> => {
+  await proApi.post('/reset-password', { token, password });
 };
 
 export default api;

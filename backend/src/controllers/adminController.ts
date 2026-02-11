@@ -1733,6 +1733,10 @@ export const getAllProsLocations = async (req: Request, res: Response): Promise<
         lastKnownLongitude: true,
         lastLocationUpdate: true,
         isLocationSharing: true,
+        latitude: true,
+        longitude: true,
+        radius: true,
+        address: true,
         missions: {
           where: {
             status: 'in_progress',
@@ -1773,6 +1777,11 @@ export const getAllProsLocations = async (req: Request, res: Response): Promise<
             updatedAt: pro.lastLocationUpdate,
           },
           isSharing: pro.isLocationSharing,
+          homeLocation: pro.latitude && pro.longitude
+            ? { latitude: pro.latitude, longitude: pro.longitude }
+            : null,
+          radius: pro.radius,
+          address: pro.address,
           currentMission: pro.missions[0]
             ? {
                 id: pro.missions[0].id,
