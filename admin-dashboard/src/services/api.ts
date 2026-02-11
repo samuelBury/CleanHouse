@@ -291,6 +291,22 @@ export const getProLocation = async (professionalId: string): Promise<Profession
   return response.data.data.professional;
 };
 
+// Pro zones
+export interface ProZone {
+  id: string;
+  name: string;
+  avatar: string | null;
+  phone: string | null;
+  homeLocation: { latitude: number; longitude: number };
+  radius: number;
+  address: string | null;
+}
+
+export const getProZones = async (): Promise<ProZone[]> => {
+  const response = await api.get('/professionals/zones');
+  return response.data.data.professionals;
+};
+
 // Audit logs
 export const getAuditLogs = async (params?: {
   adminId?: string;

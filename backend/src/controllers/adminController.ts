@@ -1805,6 +1805,53 @@ export const getAllProsLocations = async (req: Request, res: Response): Promise<
   }
 };
 
+// Obtenir les zones d'intervention de tous les pros (basé sur adresse domicile)
+export const getAllProsZones = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const professionals = await prisma.professional.findMany({
+      where: {
+        latitude: { not: null },
+        longitude: { not: null },
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        avatar: true,
+        phone: true,
+        latitude: true,
+        longitude: true,
+        radius: true,
+        address: true,
+      },
+    });
+
+    res.json({
+      success: true,
+      data: {
+        professionals: professionals.map(pro => ({
+          id: pro.id,
+          name: `${pro.firstName} ${pro.lastName}`,
+          avatar: pro.avatar,
+          phone: pro.phone,
+          homeLocation: {
+            latitude: pro.latitude,
+            longitude: pro.longitude,
+          },
+          radius: pro.radius,
+          address: pro.address,
+        })),
+      },
+    });
+  } catch (error) {
+    console.error('Get all pros zones error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur',
+    });
+  }
+};
+
 // Obtenir la position d'un professionnel spécifique
 export const getProLocation = async (req: Request, res: Response): Promise<void> => {
   try {

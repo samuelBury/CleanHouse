@@ -66,6 +66,7 @@ router.delete('/zones/:zoneId/admins/:adminId', authenticateAdmin, requireSuperA
 router.get('/professionals', authenticateAdmin, loadAdminZones, adminController.getProfessionals);
 router.get('/professionals/search', authenticateAdmin, loadAdminZones, adminController.findProsForPostalCode);
 router.get('/professionals/locations', authenticateAdmin, loadAdminZones, adminController.getAllProsLocations);
+router.get('/professionals/zones', authenticateAdmin, adminController.getAllProsZones);
 router.post(
   '/professionals',
   authenticateAdmin,

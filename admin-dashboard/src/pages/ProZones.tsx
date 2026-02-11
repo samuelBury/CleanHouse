@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { MapContainer, TileLayer, Circle, Marker, Popup, useMap } from 'react-leaflet';
 import { Icon, LatLngBounds } from 'leaflet';
 import { RefreshCw, User, MapPin, Target } from 'lucide-react';
-import { getProLocations, type ProfessionalLocation } from '../services/api';
+import { getProZones, type ProZone } from '../services/api';
 import 'leaflet/dist/leaflet.css';
 
 // Couleurs distinctes pour chaque pro
@@ -25,14 +25,13 @@ const createMarkerIcon = (color: string) =>
     popupAnchor: [0, -32],
   });
 
-function FitBounds({ pros }: { pros: ProfessionalLocation[] }) {
+function FitBounds({ pros }: { pros: ProZone[] }) {
   const map = useMap();
 
   useEffect(() => {
-    const withHome = pros.filter((p) => p.homeLocation);
-    if (withHome.length > 0) {
+    if (pros.length > 0) {
       const bounds = new LatLngBounds(
-        withHome.map((p) => [p.homeLocation!.latitude, p.homeLocation!.longitude])
+        pros.map((p) => [p.homeLocation.latitude, p.homeLocation.longitude])
       );
       map.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
     }
@@ -42,14 +41,14 @@ function FitBounds({ pros }: { pros: ProfessionalLocation[] }) {
 }
 
 export default function ProZones() {
-  const [professionals, setProfessionals] = useState<ProfessionalLocation[]>([]);
+  const [professionals, setProfessionals] = useState<ProZone[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchLocations = useCallback(async () => {
+  const fetchZones = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await getProLocations();
+      const data = await getProZones();
       setProfessionals(data);
       setError(null);
     } catch (err: any) {
@@ -60,10 +59,8 @@ export default function ProZones() {
   }, []);
 
   useEffect(() => {
-    fetchLocations();
-  }, [fetchLocations]);
-
-  const prosWithZone = professionals.filter((p) => p.homeLocation && p.radius);
+    fetchZones();
+  }, [fetchZones]);
   const defaultCenter: [number, number] = [48.8566, 2.3522];
 
   return (
@@ -73,13 +70,12 @@ export default function ProZones() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Zones d'intervention</h1>
           <p className="text-gray-500">
-            {prosWithZone.length} professionnel{prosWithZone.length > 1 ? 's' : ''} avec zone
-            {' '}sur {professionals.length} total
+            {professionals.length} professionnel{professionals.length > 1 ? 's' : ''} avec zone d'intervention
           </p>
         </div>
 
         <button
-          onClick={fetchLocations}
+          onClick={fetchZones}
           disabled={loading}
           className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 transition-colors"
         >
@@ -103,16 +99,16 @@ export default function ProZones() {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
 
-          {prosWithZone.length > 0 && <FitBounds pros={prosWithZone} />}
+          {professionals.length > 0 && <FitBounds pros={professionals} />}
 
-          {prosWithZone.map((pro, index) => {
+          {professionals.map((pro, index) => {
             const color = COLORS[index % COLORS.length];
             const radiusMeters = (pro.radius ?? 5) * 1000;
 
             return (
               <span key={pro.id}>
                 <Circle
-                  center={[pro.homeLocation!.latitude, pro.homeLocation!.longitude]}
+                  center={[pro.homeLocation.latitude, pro.homeLocation.longitude]}
                   radius={radiusMeters}
                   pathOptions={{
                     color,
@@ -122,7 +118,7 @@ export default function ProZones() {
                   }}
                 />
                 <Marker
-                  position={[pro.homeLocation!.latitude, pro.homeLocation!.longitude]}
+                  position={[pro.homeLocation.latitude, pro.homeLocation.longitude]}
                   icon={createMarkerIcon(color)}
                 >
                   <Popup>
@@ -161,43 +157,13 @@ export default function ProZones() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl p-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-teal-100 flex items-center justify-center">
-              <Target className="w-5 h-5 text-teal-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">{prosWithZone.length}</p>
-              <p className="text-sm text-gray-500">Pros avec zone</p>
-            </div>
-          </div>
+      <div className="bg-white rounded-xl p-4 shadow-sm inline-flex items-center gap-3">
+        <div className="w-10 h-10 rounded-lg bg-teal-100 flex items-center justify-center">
+          <Target className="w-5 h-5 text-teal-600" />
         </div>
-
-        <div className="bg-white rounded-xl p-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-              <MapPin className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">
-                {professionals.length - prosWithZone.length}
-              </p>
-              <p className="text-sm text-gray-500">Sans zone</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-              <User className="w-5 h-5 text-gray-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">{professionals.length}</p>
-              <p className="text-sm text-gray-500">Total pros</p>
-            </div>
-          </div>
+        <div>
+          <p className="text-2xl font-bold text-gray-900">{professionals.length}</p>
+          <p className="text-sm text-gray-500">Pros affichés sur la carte</p>
         </div>
       </div>
     </div>
