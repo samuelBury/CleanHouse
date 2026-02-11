@@ -473,27 +473,43 @@ export const forgotPassword = asyncHandler(async (req: Request, res: Response) =
   });
 });
 
-// Réinitialiser le mot de passe avec le token
+// Réinitialiser le mot de passe avec le code
 export const resetPassword = asyncHandler(async (req: Request, res: Response) => {
-  const { token, password } = req.body;
+  const { token, code, password } = req.body;
 
-  if (!token || !password) {
-    throw createError('Token et mot de passe requis', 400);
+  if ((!token && !code) || !password) {
+    throw createError('Code et mot de passe requis', 400);
   }
 
   if (password.length < 8) {
     throw createError('Le mot de passe doit contenir au moins 8 caractères', 400);
   }
 
-  const professional = await prisma.professional.findFirst({
-    where: {
-      passwordResetToken: token,
-      passwordResetExpires: { gt: new Date() },
-    },
-  });
+  let professional;
+
+  if (code) {
+    // Recherche par code (6 premiers caractères du token, insensible à la casse)
+    const allPros = await prisma.professional.findMany({
+      where: {
+        passwordResetToken: { not: null },
+        passwordResetExpires: { gt: new Date() },
+      },
+    });
+    professional = allPros.find(p =>
+      p.passwordResetToken?.substring(0, 6).toUpperCase() === code.toUpperCase()
+    );
+  } else {
+    // Recherche par token complet (compatibilité dashboard)
+    professional = await prisma.professional.findFirst({
+      where: {
+        passwordResetToken: token,
+        passwordResetExpires: { gt: new Date() },
+      },
+    });
+  }
 
   if (!professional) {
-    throw createError('Token invalide ou expiré', 400);
+    throw createError('Code invalide ou expiré', 400);
   }
 
   const hashedPassword = await bcrypt.hash(password, 12);

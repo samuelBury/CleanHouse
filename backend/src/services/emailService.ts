@@ -233,21 +233,48 @@ export const sendPasswordResetEmail = async (
   to: string,
   resetToken: string
 ): Promise<boolean> => {
-  const resetUrl = `${process.env.ADMIN_URL || 'http://localhost:3001'}/pro/reset-password?token=${resetToken}`;
+  // Générer un code à 6 chiffres à partir du token
+  const code = resetToken.substring(0, 6).toUpperCase();
 
   return sendEmail({
     to,
-    subject: 'Réinitialisation de votre mot de passe CleanHouse',
+    subject: 'Votre code de réinitialisation CleanHouse',
     html: `
-      <h1>Réinitialisation de mot de passe</h1>
-      <p>Vous avez demandé à réinitialiser votre mot de passe.</p>
-      <p>Cliquez sur le lien ci-dessous pour définir un nouveau mot de passe :</p>
-      <p><a href="${resetUrl}">Réinitialiser mon mot de passe</a></p>
-      <p>Ce lien expire dans 1 heure.</p>
-      <p>Si vous n'avez pas fait cette demande, ignorez cet email.</p>
-      <p>L'équipe CleanHouse</p>
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { text-align: center; padding: 20px 0; }
+          .logo { font-size: 28px; font-weight: bold; color: #4cb04f; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 10px; }
+          .code { font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #4cb04f; text-align: center; padding: 20px; background: #fff; border-radius: 10px; margin: 20px 0; }
+          .footer { text-align: center; padding: 20px; color: #888; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <div class="logo">CleanHouse Pro</div>
+          </div>
+          <div class="content">
+            <h2>Réinitialisation de mot de passe</h2>
+            <p>Vous avez demandé à réinitialiser votre mot de passe.</p>
+            <p>Entrez ce code dans l'application :</p>
+            <div class="code">${code}</div>
+            <p><strong>Ce code expire dans 1 heure.</strong></p>
+            <p>Si vous n'avez pas fait cette demande, ignorez cet email.</p>
+          </div>
+          <div class="footer">
+            <p>CleanHouse - Services de ménage à Paris</p>
+          </div>
+        </div>
+      </body>
+      </html>
     `,
-    text: `Réinitialisez votre mot de passe : ${resetUrl}`,
+    text: `Votre code de réinitialisation CleanHouse : ${code}\nCe code expire dans 1 heure.`,
   });
 };
 
