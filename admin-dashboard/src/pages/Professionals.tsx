@@ -1,6 +1,7 @@
 // Page de gestion des professionnels
 import { useState, useEffect } from 'react';
 import { Search, CheckCircle, XCircle, Star, MapPin, Plus, X, Upload, FileText } from 'lucide-react';
+import AddressAutocomplete from '../components/AddressAutocomplete';
 import { getProfessionals, verifyProfessional, createProfessional } from '../services/api';
 import type { Professional } from '../types';
 import { format } from 'date-fns';
@@ -389,12 +390,12 @@ export default function Professionals() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Adresse
                 </label>
-                <input
-                  type="text"
+                <AddressAutocomplete
                   value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500"
-                  placeholder="123 Rue Example"
+                  onChange={(address) => setFormData({ ...formData, address })}
+                  onSelect={({ address, city, postalCode }) =>
+                    setFormData({ ...formData, address, city, postalCode })
+                  }
                 />
               </div>
 
