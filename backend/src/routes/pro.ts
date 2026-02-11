@@ -17,6 +17,10 @@ router.post('/auth/logout', proAuthController.logout);
 router.get('/auth/invitation/:token', proAuthController.validateInvitation);
 router.post('/auth/setup-account', proAuthController.setupAccount);
 
+// Routes de réinitialisation de mot de passe (publiques)
+router.post('/auth/forgot-password', proAuthController.forgotPassword);
+router.post('/auth/reset-password', proAuthController.resetPassword);
+
 // Routes protégées
 router.get('/auth/me', authenticatePro, proAuthController.checkAuth);
 router.put('/profile', authenticatePro, proAuthController.updateProfile);

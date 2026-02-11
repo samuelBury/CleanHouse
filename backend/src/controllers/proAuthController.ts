@@ -1,5 +1,6 @@
 // Controller d'authentification pour les professionnels
 import { Request, Response } from 'express';
+import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import prisma from '../config/database';
 import {
@@ -10,6 +11,7 @@ import {
 } from '../config/auth';
 import { asyncHandler, createError } from '../middleware/errorHandler';
 import { validateInvitationToken } from '../services/invitationService';
+import { sendPasswordResetEmail } from '../services/emailService';
 
 // Inscription professionnel
 export const register = asyncHandler(async (req: Request, res: Response) => {
@@ -434,5 +436,79 @@ export const setupAccount = asyncHandler(async (req: Request, res: Response) => 
       refreshToken,
     },
     message: 'Compte configuré avec succès ! Bienvenue chez CleanHouse.',
+  });
+});
+
+// ============ PASSWORD RESET FLOW ============
+
+// Demander la réinitialisation du mot de passe
+export const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
+  const { email } = req.body;
+
+  if (!email) {
+    throw createError('Email requis', 400);
+  }
+
+  // Toujours retourner succès pour ne pas révéler si l'email existe
+  const professional = await prisma.professional.findUnique({ where: { email } });
+
+  if (professional) {
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 heure
+
+    await prisma.professional.update({
+      where: { id: professional.id },
+      data: {
+        passwordResetToken: resetToken,
+        passwordResetExpires: resetExpires,
+      },
+    });
+
+    await sendPasswordResetEmail(email, resetToken);
+  }
+
+  res.json({
+    success: true,
+    message: 'Si un compte existe avec cet email, un lien de réinitialisation a été envoyé.',
+  });
+});
+
+// Réinitialiser le mot de passe avec le token
+export const resetPassword = asyncHandler(async (req: Request, res: Response) => {
+  const { token, password } = req.body;
+
+  if (!token || !password) {
+    throw createError('Token et mot de passe requis', 400);
+  }
+
+  if (password.length < 8) {
+    throw createError('Le mot de passe doit contenir au moins 8 caractères', 400);
+  }
+
+  const professional = await prisma.professional.findFirst({
+    where: {
+      passwordResetToken: token,
+      passwordResetExpires: { gt: new Date() },
+    },
+  });
+
+  if (!professional) {
+    throw createError('Token invalide ou expiré', 400);
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 12);
+
+  await prisma.professional.update({
+    where: { id: professional.id },
+    data: {
+      password: hashedPassword,
+      passwordResetToken: null,
+      passwordResetExpires: null,
+    },
+  });
+
+  res.json({
+    success: true,
+    message: 'Mot de passe réinitialisé avec succès.',
   });
 });

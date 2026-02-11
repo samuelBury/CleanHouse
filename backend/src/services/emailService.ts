@@ -233,7 +233,7 @@ export const sendPasswordResetEmail = async (
   to: string,
   resetToken: string
 ): Promise<boolean> => {
-  const resetUrl = `${process.env.APP_URL || 'https://cleanhouse-production.up.railway.app'}/api/auth/reset-password?token=${resetToken}`;
+  const resetUrl = `${process.env.ADMIN_URL || 'http://localhost:3001'}/pro/reset-password?token=${resetToken}`;
 
   return sendEmail({
     to,
