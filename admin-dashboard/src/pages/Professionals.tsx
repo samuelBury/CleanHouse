@@ -23,6 +23,8 @@ export default function Professionals() {
     email: '',
     phone: '',
     address: '',
+    city: '',
+    postalCode: '',
   });
   const [idDocument, setIdDocument] = useState<File | null>(null);
   const [proofOfAddress, setProofOfAddress] = useState<File | null>(null);
@@ -83,13 +85,15 @@ export default function Professionals() {
         email: formData.email,
         phone: formData.phone,
         address: formData.address || undefined,
+        city: formData.city || undefined,
+        postalCode: formData.postalCode || undefined,
         idDocument: idDocument,
         proofOfAddress: proofOfAddress,
         contract: contract || undefined,
         carteVitale: carteVitale || undefined,
       });
       setShowAddModal(false);
-      setFormData({ firstName: '', lastName: '', email: '', phone: '', address: '' });
+      setFormData({ firstName: '', lastName: '', email: '', phone: '', address: '', city: '', postalCode: '' });
       setIdDocument(null);
       setProofOfAddress(null);
       setContract(null);
@@ -390,8 +394,36 @@ export default function Professionals() {
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500"
-                  placeholder="123 Rue Example, 75001 Paris"
+                  placeholder="123 Rue Example"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Code postal
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.postalCode}
+                    onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500"
+                    placeholder="75001"
+                    maxLength={5}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Ville
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.city}
+                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500"
+                    placeholder="Paris"
+                  />
+                </div>
               </div>
 
               {/* Documents obligatoires */}

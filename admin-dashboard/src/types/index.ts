@@ -17,6 +17,8 @@ export interface Professional {
   lastName: string;
   phone: string;
   address?: string;
+  city?: string;
+  postalCode?: string;
   avatar?: string;
   rating: number;
   totalMissions: number;

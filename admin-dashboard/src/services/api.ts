@@ -142,6 +142,8 @@ export const createProfessional = async (data: {
   email: string;
   phone: string;
   address?: string;
+  city?: string;
+  postalCode?: string;
   idDocument?: File;
   proofOfAddress?: File;
   contract?: File;
@@ -153,6 +155,8 @@ export const createProfessional = async (data: {
   formData.append('email', data.email);
   formData.append('phone', data.phone);
   if (data.address) formData.append('address', data.address);
+  if (data.city) formData.append('city', data.city);
+  if (data.postalCode) formData.append('postalCode', data.postalCode);
   if (data.idDocument) formData.append('idDocument', data.idDocument);
   if (data.proofOfAddress) formData.append('proofOfAddress', data.proofOfAddress);
   if (data.contract) formData.append('contract', data.contract);
