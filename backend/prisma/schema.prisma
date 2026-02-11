@@ -103,6 +103,8 @@ model Professional {
   phone                     String
   avatar                    String?
   address                   String?
+  city                      String?
+  postalCode                String?
   latitude                  Float?
   longitude                 Float?
   radius                    Int                  @default(10) // Rayon d'intervention en km

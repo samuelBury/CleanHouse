@@ -1369,6 +1369,8 @@ export const createProfessional = async (req: Request, res: Response): Promise<v
       email,
       phone,
       address,
+      city,
+      postalCode,
       socialSecurityNumber,
       createZone,
       zoneRadius = 5, // Rayon en km par défaut
@@ -1441,6 +1443,8 @@ export const createProfessional = async (req: Request, res: Response): Promise<v
         email,
         phone,
         address,
+        city,
+        postalCode,
         latitude: coordinates?.lat,
         longitude: coordinates?.lng,
         socialSecurityNumber,
