@@ -23,7 +23,7 @@ if (getApps().length === 0) {
 
 const bucket = getApps().length > 0 ? getStorage().bucket() : null;
 
-export type DocumentType = 'contract' | 'id_document' | 'proof_of_address' | 'avatar' | 'other';
+export type DocumentType = 'contract' | 'id_document' | 'proof_of_address' | 'carte_vitale' | 'avatar' | 'other';
 
 interface UploadResult {
   key: string;
