@@ -258,6 +258,9 @@ export const checkAuth = asyncHandler(async (req: Request, res: Response) => {
       idDocumentUrl: true,
       proofOfAddressUrl: true,
       carteVitaleUrl: true,
+      latitude: true,
+      longitude: true,
+      radius: true,
     },
   });
 
