@@ -1,10 +1,10 @@
 // Système de thème centralisé pour CleanHouse
 
 export const Colors = {
-  // Couleur principale (Violet-Rose)
-  primary: '#A94CB7',
-  primaryDark: '#6B2D8B',
-  primaryLight: '#D064A0',
+  // Couleur principale (Vert professionnel)
+  primary: '#2E7D5F',
+  primaryDark: '#1B5E4A',
+  primaryLight: '#4CAF7D',
   primaryBackground: '#F8EDF9',
   primaryPastel: '#D9A8E0',
 
@@ -15,11 +15,11 @@ export const Colors = {
   secondaryBackground: '#F3E5F5',
   secondaryPastel: '#C98FD4',
 
-  // Dégradé principal : violet → rose → violet
-  gradient: ['#6B2D8B', '#E8368F', '#8B3DAB'] as const,
+  // Dégradé principal : vert foncé → vert → vert clair
+  gradient: ['#1B5E4A', '#2E7D5F', '#4CAF7D'] as const,
 
   // Dégradé secondaire
-  gradientSecondary: ['#4A1F61', '#E8368F', '#6B2D8B'] as const,
+  gradientSecondary: ['#1B5E4A', '#2E7D5F', '#4CAF7D'] as const,
 
   // Texte
   text: {

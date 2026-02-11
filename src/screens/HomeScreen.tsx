@@ -260,11 +260,13 @@ const HomeScreen: React.FC = () => {
           <UpcomingBookingsCard
             bookings={bookings || []}
             onBookingPress={handleBookingPress}
+            onCancel={handleCancelBooking}
           />
           <NextConfirmedBookingCard
             bookings={bookings || []}
             onBookingPress={handleBookingPress}
             onTrackPro={(missionId) => navigation.navigate('TrackPro', { missionId })}
+            onCancel={handleCancelBooking}
           />
           <ServicesSection onServiceSelect={handleServiceSelect} />
           <View style={styles.bottomPadding} />
@@ -290,7 +292,17 @@ const HomeScreen: React.FC = () => {
         isIndeterminate={isIndeterminate}
       />
 
-      <SearchingProfessional visible={showSearching} />
+      <SearchingProfessional
+        visible={showSearching}
+        onCancel={() => {
+          if (retryIntervalRef.current) {
+            clearInterval(retryIntervalRef.current);
+            retryIntervalRef.current = null;
+          }
+          setShowSearching(false);
+          resetBooking();
+        }}
+      />
 
       <ConfirmationModal
         visible={showConfirmation}

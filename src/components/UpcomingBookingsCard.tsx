@@ -9,6 +9,7 @@ import type {Booking} from '../types';
 interface UpcomingBookingsCardProps {
   bookings: Booking[];
   onBookingPress?: (booking: Booking) => void;
+  onCancel?: (bookingId: string) => void;
 }
 
 // Helper pour parser une date (ISO ou DD/MM/YYYY)
@@ -45,6 +46,7 @@ const formatDateDisplay = (dateStr: string): string => {
 export default function UpcomingBookingsCard({
   bookings,
   onBookingPress,
+  onCancel,
 }: UpcomingBookingsCardProps) {
   // Filtrer les réservations à venir (pending, confirmed, in_progress)
   const upcomingBookings = bookings
@@ -180,6 +182,18 @@ export default function UpcomingBookingsCard({
                 </Text>
                 <Text style={styles.priceText}>{booking.price}€</Text>
               </View>
+
+              {/* Bouton Annuler (pas pour les prestations en cours) */}
+              {onCancel && booking.status !== 'in_progress' && (
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  activeOpacity={0.7}
+                  onPress={() => onCancel(booking.id)}
+                >
+                  <FontAwesome5 name="times-circle" size={13} color="#ef4444" />
+                  <Text style={styles.cancelButtonText}>Annuler la prestation</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </TouchableOpacity>
         );
@@ -354,5 +368,22 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background.primary,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  cancelButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    backgroundColor: '#fef2f2',
+  },
+  cancelButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#ef4444',
   },
 });

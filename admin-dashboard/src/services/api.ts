@@ -144,6 +144,8 @@ export const createProfessional = async (data: {
   address?: string;
   idDocument?: File;
   proofOfAddress?: File;
+  contract?: File;
+  carteVitale?: File;
 }): Promise<Professional> => {
   const formData = new FormData();
   formData.append('firstName', data.firstName);
@@ -153,6 +155,8 @@ export const createProfessional = async (data: {
   if (data.address) formData.append('address', data.address);
   if (data.idDocument) formData.append('idDocument', data.idDocument);
   if (data.proofOfAddress) formData.append('proofOfAddress', data.proofOfAddress);
+  if (data.contract) formData.append('contract', data.contract);
+  if (data.carteVitale) formData.append('carteVitale', data.carteVitale);
 
   const response = await api.post('/professionals', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },

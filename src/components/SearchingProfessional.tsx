@@ -1,13 +1,14 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {View, Text, StyleSheet, Animated, Modal, Easing} from 'react-native';
+import {View, Text, StyleSheet, Animated, Modal, Easing, TouchableOpacity} from 'react-native';
 import {FontAwesome5} from '@expo/vector-icons';
 import {Colors} from '../config/theme';
 
 interface SearchingProfessionalProps {
   visible: boolean;
+  onCancel?: () => void;
 }
 
-export default function SearchingProfessional({visible}: SearchingProfessionalProps) {
+export default function SearchingProfessional({visible, onCancel}: SearchingProfessionalProps) {
   const spinAnim = useRef(new Animated.Value(0)).current;
   const pulseScale = useRef(new Animated.Value(1)).current;
   const ping1Scale = useRef(new Animated.Value(1)).current;
@@ -178,6 +179,13 @@ export default function SearchingProfessional({visible}: SearchingProfessionalPr
               Vous serez notifié dès qu'un professionnel accepte votre demande
             </Text>
           </View>
+
+          {/* Bouton Annuler */}
+          {onCancel && (
+            <TouchableOpacity style={styles.cancelButton} onPress={onCancel} activeOpacity={0.7}>
+              <Text style={styles.cancelButtonText}>Annuler</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </Modal>
@@ -270,5 +278,18 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.text.secondary,
     lineHeight: 18,
+  },
+  cancelButton: {
+    marginTop: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+  },
+  cancelButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.text.secondary,
   },
 });

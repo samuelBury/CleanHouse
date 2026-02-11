@@ -9,6 +9,7 @@ interface NextConfirmedBookingCardProps {
   bookings: Booking[];
   onBookingPress?: (booking: Booking) => void;
   onTrackPro?: (missionId: string) => void;
+  onCancel?: (bookingId: string) => void;
 }
 
 // Helper pour parser une date (ISO ou DD/MM/YYYY)
@@ -45,6 +46,7 @@ export default function NextConfirmedBookingCard({
   bookings,
   onBookingPress,
   onTrackPro,
+  onCancel,
 }: NextConfirmedBookingCardProps) {
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -70,8 +72,8 @@ export default function NextConfirmedBookingCard({
     return () => animation.stop();
   }, [pulseAnim]);
 
-  // Trouver la prochaine réservation (pending ou confirmed)
-  const filteredBookings = bookings?.filter(b => b.status === 'pending' || b.status === 'confirmed') || [];
+  // Trouver la prochaine réservation (pending, confirmed ou in_progress)
+  const filteredBookings = bookings?.filter(b => b.status === 'pending' || b.status === 'confirmed' || b.status === 'in_progress') || [];
 
   const nextBooking = filteredBookings
     .sort((a, b) => {
@@ -84,7 +86,7 @@ export default function NextConfirmedBookingCard({
     return null;
   }
 
-  const isConfirmed = nextBooking.status === 'confirmed';
+  const isConfirmed = nextBooking.status === 'confirmed' || nextBooking.status === 'in_progress';
 
   const getServiceIcon = (service: string) => {
     switch (service) {
@@ -114,13 +116,17 @@ export default function NextConfirmedBookingCard({
           {/* Badge "Prochaine prestation" */}
           <View style={styles.badge}>
             <FontAwesome5
-              name={isConfirmed ? "check-circle" : "clock"}
+              name={nextBooking.status === 'in_progress' ? "play-circle" : isConfirmed ? "check-circle" : "clock"}
               size={10}
               color={isConfirmed ? Colors.primary : '#f59e0b'}
               solid
             />
             <Text style={[styles.badgeText, !isConfirmed && {color: '#f59e0b'}]}>
-              {isConfirmed ? 'Prochaine prestation confirmée' : 'Prestation en attente de confirmation'}
+              {nextBooking.status === 'in_progress'
+                ? 'Prestation en cours'
+                : isConfirmed
+                  ? 'Prochaine prestation'
+                  : 'Prestation en attente'}
             </Text>
           </View>
 
@@ -157,7 +163,7 @@ export default function NextConfirmedBookingCard({
           </View>
 
           {/* Bouton Suivre le pro */}
-          {isConfirmed && nextBooking.mission?.id && onTrackPro && (
+          {(isConfirmed || nextBooking.status === 'in_progress') && nextBooking.mission?.id && onTrackPro && (
             <TouchableOpacity
               style={styles.trackButton}
               activeOpacity={0.8}
@@ -165,6 +171,18 @@ export default function NextConfirmedBookingCard({
             >
               <FontAwesome5 name="map-marker-alt" size={14} color={Colors.primary} />
               <Text style={styles.trackButtonText}>Suivre mon professionnel</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Bouton Annuler (pas pour les prestations en cours) */}
+          {onCancel && nextBooking.status !== 'in_progress' && (
+            <TouchableOpacity
+              style={styles.cancelButton}
+              activeOpacity={0.8}
+              onPress={() => onCancel(nextBooking.id)}
+            >
+              <FontAwesome5 name="times-circle" size={13} color="#ef4444" />
+              <Text style={styles.cancelButtonText}>Annuler la prestation</Text>
             </TouchableOpacity>
           )}
         </LinearGradient>
@@ -292,5 +310,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: Colors.primary,
+  },
+  cancelButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.5)',
+    paddingVertical: 10,
+    marginTop: 8,
+    gap: 8,
+  },
+  cancelButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#fecaca',
   },
 });

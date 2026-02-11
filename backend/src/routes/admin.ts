@@ -73,6 +73,7 @@ router.post(
     { name: 'contract', maxCount: 1 },
     { name: 'idDocument', maxCount: 1 },
     { name: 'proofOfAddress', maxCount: 1 },
+    { name: 'carteVitale', maxCount: 1 },
     { name: 'avatar', maxCount: 1 },
   ]),
   adminController.createProfessional

@@ -1405,6 +1405,7 @@ export const createProfessional = async (req: Request, res: Response): Promise<v
     let contractUrl: string | undefined;
     let idDocumentUrl: string | undefined;
     let proofOfAddressUrl: string | undefined;
+    let carteVitaleUrl: string | undefined;
     let avatarUrl: string | undefined;
 
     if (files?.contract?.[0]) {
@@ -1420,6 +1421,11 @@ export const createProfessional = async (req: Request, res: Response): Promise<v
     if (files?.proofOfAddress?.[0]) {
       const result = await fileUploadService.uploadDocument(files.proofOfAddress[0], 'proof_of_address');
       proofOfAddressUrl = result.url;
+    }
+
+    if (files?.carteVitale?.[0]) {
+      const result = await fileUploadService.uploadDocument(files.carteVitale[0], 'carte_vitale');
+      carteVitaleUrl = result.url;
     }
 
     if (files?.avatar?.[0]) {
@@ -1441,6 +1447,7 @@ export const createProfessional = async (req: Request, res: Response): Promise<v
         contractUrl,
         idDocumentUrl,
         proofOfAddressUrl,
+        carteVitaleUrl,
         avatar: avatarUrl,
         password: null, // Sera défini lors de l'acceptation de l'invitation
         accountSetupComplete: false,
@@ -1505,6 +1512,7 @@ export const createProfessional = async (req: Request, res: Response): Promise<v
           contractUrl: professional.contractUrl,
           idDocumentUrl: professional.idDocumentUrl,
           proofOfAddressUrl: professional.proofOfAddressUrl,
+          carteVitaleUrl: professional.carteVitaleUrl,
           avatar: professional.avatar,
           accountSetupComplete: professional.accountSetupComplete,
         },

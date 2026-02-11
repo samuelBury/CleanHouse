@@ -26,6 +26,8 @@ export default function Professionals() {
   });
   const [idDocument, setIdDocument] = useState<File | null>(null);
   const [proofOfAddress, setProofOfAddress] = useState<File | null>(null);
+  const [contract, setContract] = useState<File | null>(null);
+  const [carteVitale, setCarteVitale] = useState<File | null>(null);
   const [formError, setFormError] = useState('');
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
 
@@ -83,11 +85,15 @@ export default function Professionals() {
         address: formData.address || undefined,
         idDocument: idDocument,
         proofOfAddress: proofOfAddress,
+        contract: contract || undefined,
+        carteVitale: carteVitale || undefined,
       });
       setShowAddModal(false);
       setFormData({ firstName: '', lastName: '', email: '', phone: '', address: '' });
       setIdDocument(null);
       setProofOfAddress(null);
+      setContract(null);
+      setCarteVitale(null);
       setToast({
         message: `${newPro.firstName} ${newPro.lastName} a été ajouté avec succès. Un email d'invitation lui a été envoyé.`,
         type: 'success'
@@ -472,6 +478,97 @@ export default function Professionals() {
                         <>
                           <Upload className="w-4 h-4 text-gray-400" />
                           <span className="text-sm text-gray-500">Facture EDF, quittance de loyer...</span>
+                        </>
+                      )}
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Documents optionnels */}
+              <div className="border-t pt-4 mt-2">
+                <p className="text-sm font-medium text-gray-700 mb-3">Documents optionnels</p>
+
+                {/* Contrat */}
+                <div className="mb-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Contrat
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept="image/*,application/pdf"
+                      onChange={(e) => setContract(e.target.files?.[0] || null)}
+                      className="hidden"
+                      id="contract"
+                    />
+                    <label
+                      htmlFor="contract"
+                      className={`flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer transition-colors ${
+                        contract
+                          ? 'border-teal-500 bg-teal-50 text-teal-700'
+                          : 'border-gray-300 hover:border-gray-400'
+                      }`}
+                    >
+                      {contract ? (
+                        <>
+                          <FileText className="w-4 h-4" />
+                          <span className="text-sm truncate flex-1">{contract.name}</span>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); setContract(null); }}
+                            className="text-gray-500 hover:text-red-500"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm text-gray-500">Contrat de travail, CDD, CDI...</span>
+                        </>
+                      )}
+                    </label>
+                  </div>
+                </div>
+
+                {/* Carte Vitale */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Carte Vitale
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept="image/*,application/pdf"
+                      onChange={(e) => setCarteVitale(e.target.files?.[0] || null)}
+                      className="hidden"
+                      id="carteVitale"
+                    />
+                    <label
+                      htmlFor="carteVitale"
+                      className={`flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer transition-colors ${
+                        carteVitale
+                          ? 'border-teal-500 bg-teal-50 text-teal-700'
+                          : 'border-gray-300 hover:border-gray-400'
+                      }`}
+                    >
+                      {carteVitale ? (
+                        <>
+                          <FileText className="w-4 h-4" />
+                          <span className="text-sm truncate flex-1">{carteVitale.name}</span>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); setCarteVitale(null); }}
+                            className="text-gray-500 hover:text-red-500"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm text-gray-500">Carte Vitale, attestation...</span>
                         </>
                       )}
                     </label>

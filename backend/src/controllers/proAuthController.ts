@@ -254,6 +254,10 @@ export const checkAuth = asyncHandler(async (req: Request, res: Response) => {
       rating: true,
       totalMissions: true,
       createdAt: true,
+      contractUrl: true,
+      idDocumentUrl: true,
+      proofOfAddressUrl: true,
+      carteVitaleUrl: true,
     },
   });
 
