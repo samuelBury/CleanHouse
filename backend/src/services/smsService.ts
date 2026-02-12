@@ -109,10 +109,8 @@ N'oubliez pas d'activer la géolocalisation.`;
 // SMS d'invitation à créer un compte
 export const sendInvitationSMS = async (
   phone: string,
-  firstName: string
+  message: string
 ): Promise<boolean> => {
-  const message = `Bonjour ${firstName} ! Vous avez été invité(e) à rejoindre CleanHouse. Consultez votre email pour créer votre compte professionnel.`;
-
   return sendSMS(phone, message);
 };
 
