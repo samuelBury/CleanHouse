@@ -135,6 +135,9 @@ model Professional {
   invitationExpires         DateTime?
   accountSetupComplete      Boolean              @default(false)
 
+  // Langue de l'interface
+  language                  String               @default("fr")
+
   // Push notifications
   pushToken                 String?
 

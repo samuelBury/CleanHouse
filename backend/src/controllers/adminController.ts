@@ -1374,6 +1374,7 @@ export const createProfessional = async (req: Request, res: Response): Promise<v
       socialSecurityNumber,
       createZone,
       zoneRadius = 5, // Rayon en km par défaut
+      language = 'fr',
     } = req.body;
 
     // Validation des champs requis
@@ -1453,6 +1454,7 @@ export const createProfessional = async (req: Request, res: Response): Promise<v
         proofOfAddressUrl,
         carteVitaleUrl,
         avatar: avatarUrl,
+        language,
         password: null, // Sera défini lors de l'acceptation de l'invitation
         accountSetupComplete: false,
       },

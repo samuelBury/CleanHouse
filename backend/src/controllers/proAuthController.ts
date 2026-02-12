@@ -158,6 +158,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
         idDocumentUrl: professional.idDocumentUrl,
         proofOfAddressUrl: professional.proofOfAddressUrl,
         carteVitaleUrl: professional.carteVitaleUrl,
+        language: professional.language,
       },
       accessToken,
       refreshToken,
@@ -270,6 +271,7 @@ export const checkAuth = asyncHandler(async (req: Request, res: Response) => {
       latitude: true,
       longitude: true,
       radius: true,
+      language: true,
     },
   });
 
@@ -289,7 +291,7 @@ export const updateProfile = asyncHandler(async (req: Request, res: Response) =>
     throw createError('Non authentifié', 401);
   }
 
-  const { firstName, lastName, phone, address, bio, radius, isAvailable, transportMode } = req.body;
+  const { firstName, lastName, phone, address, bio, radius, isAvailable, transportMode, language } = req.body;
 
   const professional = await prisma.professional.update({
     where: { id: req.professional.id },
@@ -302,6 +304,7 @@ export const updateProfile = asyncHandler(async (req: Request, res: Response) =>
       ...(radius !== undefined && { radius }),
       ...(isAvailable !== undefined && { isAvailable }),
       ...(transportMode && { transportMode }),
+      ...(language && { language }),
     },
     select: {
       id: true,
@@ -319,6 +322,7 @@ export const updateProfile = asyncHandler(async (req: Request, res: Response) =>
       rating: true,
       totalMissions: true,
       createdAt: true,
+      language: true,
     },
   });
 

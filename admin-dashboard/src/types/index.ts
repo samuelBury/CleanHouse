@@ -25,6 +25,7 @@ export interface Professional {
   totalMissions: number;
   isAvailable: boolean;
   isVerified: boolean;
+  language?: string;
   createdAt: string;
   zones?: Zone[];
 }

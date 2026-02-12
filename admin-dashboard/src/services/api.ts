@@ -169,6 +169,7 @@ export const createProfessional = async (data: {
   address?: string;
   city?: string;
   postalCode?: string;
+  language?: string;
   idDocument?: File;
   proofOfAddress?: File;
   contract?: File;
@@ -182,6 +183,7 @@ export const createProfessional = async (data: {
   if (data.address) formData.append('address', data.address);
   if (data.city) formData.append('city', data.city);
   if (data.postalCode) formData.append('postalCode', data.postalCode);
+  if (data.language) formData.append('language', data.language);
   if (data.idDocument) formData.append('idDocument', data.idDocument);
   if (data.proofOfAddress) formData.append('proofOfAddress', data.proofOfAddress);
   if (data.contract) formData.append('contract', data.contract);

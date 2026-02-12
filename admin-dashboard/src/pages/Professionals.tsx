@@ -26,6 +26,7 @@ export default function Professionals() {
     address: '',
     city: '',
     postalCode: '',
+    language: 'fr',
   });
   const [idDocument, setIdDocument] = useState<File | null>(null);
   const [proofOfAddress, setProofOfAddress] = useState<File | null>(null);
@@ -88,13 +89,14 @@ export default function Professionals() {
         address: formData.address || undefined,
         city: formData.city || undefined,
         postalCode: formData.postalCode || undefined,
+        language: formData.language,
         idDocument: idDocument,
         proofOfAddress: proofOfAddress,
         contract: contract || undefined,
         carteVitale: carteVitale || undefined,
       });
       setShowAddModal(false);
-      setFormData({ firstName: '', lastName: '', email: '', phone: '', address: '', city: '', postalCode: '' });
+      setFormData({ firstName: '', lastName: '', email: '', phone: '', address: '', city: '', postalCode: '', language: 'fr' });
       setIdDocument(null);
       setProofOfAddress(null);
       setContract(null);
@@ -384,6 +386,26 @@ export default function Professionals() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500"
                   placeholder="0612345678"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Langue de l'app
+                </label>
+                <select
+                  value={formData.language}
+                  onChange={(e) => setFormData({ ...formData, language: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500"
+                >
+                  <option value="fr">Français</option>
+                  <option value="en">English</option>
+                  <option value="ru">Русский</option>
+                  <option value="ro">Română</option>
+                  <option value="pt">Português</option>
+                  <option value="ar">العربية</option>
+                  <option value="es">Español</option>
+                  <option value="zh">中文</option>
+                </select>
               </div>
 
               <div>
