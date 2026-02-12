@@ -468,7 +468,7 @@ export const forgotPassword = asyncHandler(async (req: Request, res: Response) =
       },
     });
 
-    await sendPasswordResetEmail(email, resetToken);
+    await sendPasswordResetEmail(email, resetToken, professional.language || 'fr');
   }
 
   res.json({

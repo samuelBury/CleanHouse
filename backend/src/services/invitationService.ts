@@ -204,8 +204,8 @@ export const sendInvitationEmail = async (professional: {
 
   // URL de l'app Pro pour créer le compte
   const invitationUrl = `${process.env.PRO_APP_URL || 'cleanhouse-pro://'}setup-account?token=${professional.invitationToken}`;
-  // URL web de fallback
-  const webUrl = `${process.env.ADMIN_URL || 'http://localhost:3001'}/pro/setup?token=${professional.invitationToken}`;
+  // URL web de fallback (avec lang pour afficher la page dans la bonne langue)
+  const webUrl = `${process.env.ADMIN_URL || 'http://localhost:3001'}/pro/setup?token=${professional.invitationToken}&lang=${lang}`;
 
   return sendEmail({
     to: professional.email,
@@ -314,6 +314,7 @@ export const validateInvitationToken = async (token: string): Promise<{
     email: string;
     firstName: string;
     lastName: string;
+    language: string;
   };
   error?: string;
 }> => {
@@ -324,6 +325,7 @@ export const validateInvitationToken = async (token: string): Promise<{
       email: true,
       firstName: true,
       lastName: true,
+      language: true,
       invitationExpires: true,
       accountSetupComplete: true,
     },
@@ -357,6 +359,7 @@ export const validateInvitationToken = async (token: string): Promise<{
       email: professional.email,
       firstName: professional.firstName,
       lastName: professional.lastName,
+      language: professional.language || 'fr',
     },
   };
 };

@@ -228,24 +228,111 @@ export const sendBookingReminderEmail = async (
   });
 };
 
+// Traductions email de réinitialisation
+const resetEmailTranslations: Record<string, {
+  subject: string;
+  title: string;
+  requested: string;
+  enterCode: string;
+  expiry: string;
+  ignore: string;
+  text: (code: string) => string;
+}> = {
+  fr: {
+    subject: 'Votre code de réinitialisation CleanHouse',
+    title: 'Réinitialisation de mot de passe',
+    requested: 'Vous avez demandé à réinitialiser votre mot de passe.',
+    enterCode: 'Entrez ce code dans l\'application :',
+    expiry: 'Ce code expire dans 1 heure.',
+    ignore: 'Si vous n\'avez pas fait cette demande, ignorez cet email.',
+    text: (code) => `Votre code de réinitialisation CleanHouse : ${code}\nCe code expire dans 1 heure.`,
+  },
+  en: {
+    subject: 'Your CleanHouse reset code',
+    title: 'Password reset',
+    requested: 'You requested to reset your password.',
+    enterCode: 'Enter this code in the app:',
+    expiry: 'This code expires in 1 hour.',
+    ignore: 'If you did not make this request, ignore this email.',
+    text: (code) => `Your CleanHouse reset code: ${code}\nThis code expires in 1 hour.`,
+  },
+  ru: {
+    subject: 'Ваш код сброса CleanHouse',
+    title: 'Сброс пароля',
+    requested: 'Вы запросили сброс пароля.',
+    enterCode: 'Введите этот код в приложении:',
+    expiry: 'Код действителен в течение 1 часа.',
+    ignore: 'Если вы не делали этот запрос, проигнорируйте это письмо.',
+    text: (code) => `Ваш код сброса CleanHouse: ${code}\nКод действителен 1 час.`,
+  },
+  ro: {
+    subject: 'Codul dvs. de resetare CleanHouse',
+    title: 'Resetarea parolei',
+    requested: 'Ați solicitat resetarea parolei.',
+    enterCode: 'Introduceți acest cod în aplicație:',
+    expiry: 'Acest cod expiră în 1 oră.',
+    ignore: 'Dacă nu ați făcut această solicitare, ignorați acest email.',
+    text: (code) => `Codul dvs. de resetare CleanHouse: ${code}\nAcest cod expiră în 1 oră.`,
+  },
+  pt: {
+    subject: 'O seu código de redefinição CleanHouse',
+    title: 'Redefinição de palavra-passe',
+    requested: 'Solicitou a redefinição da sua palavra-passe.',
+    enterCode: 'Introduza este código na aplicação:',
+    expiry: 'Este código expira em 1 hora.',
+    ignore: 'Se não fez este pedido, ignore este email.',
+    text: (code) => `O seu código de redefinição CleanHouse: ${code}\nEste código expira em 1 hora.`,
+  },
+  ar: {
+    subject: 'رمز إعادة تعيين CleanHouse الخاص بك',
+    title: 'إعادة تعيين كلمة المرور',
+    requested: 'لقد طلبت إعادة تعيين كلمة المرور.',
+    enterCode: 'أدخل هذا الرمز في التطبيق:',
+    expiry: 'ينتهي هذا الرمز خلال ساعة واحدة.',
+    ignore: 'إذا لم تقم بهذا الطلب، تجاهل هذا البريد.',
+    text: (code) => `رمز إعادة تعيين CleanHouse: ${code}\nينتهي خلال ساعة واحدة.`,
+  },
+  es: {
+    subject: 'Tu código de restablecimiento CleanHouse',
+    title: 'Restablecimiento de contraseña',
+    requested: 'Has solicitado restablecer tu contraseña.',
+    enterCode: 'Introduce este código en la app:',
+    expiry: 'Este código caduca en 1 hora.',
+    ignore: 'Si no has hecho esta solicitud, ignora este email.',
+    text: (code) => `Tu código de restablecimiento CleanHouse: ${code}\nEste código caduca en 1 hora.`,
+  },
+  zh: {
+    subject: '您的 CleanHouse 重置码',
+    title: '密码重置',
+    requested: '您已请求重置密码。',
+    enterCode: '在应用中输入此代码：',
+    expiry: '此代码将在1小时后过期。',
+    ignore: '如果您没有发出此请求，请忽略此邮件。',
+    text: (code) => `您的 CleanHouse 重置码：${code}\n此代码将在1小时后过期。`,
+  },
+};
+
 // Email de réinitialisation de mot de passe
 export const sendPasswordResetEmail = async (
   to: string,
-  resetToken: string
+  resetToken: string,
+  lang: string = 'fr'
 ): Promise<boolean> => {
   // Générer un code à 6 chiffres à partir du token
   const code = resetToken.substring(0, 6).toUpperCase();
+  const t = resetEmailTranslations[lang] || resetEmailTranslations.fr;
+  const dir = lang === 'ar' ? 'rtl' : 'ltr';
 
   return sendEmail({
     to,
-    subject: 'Votre code de réinitialisation CleanHouse',
+    subject: t.subject,
     html: `
       <!DOCTYPE html>
-      <html>
+      <html dir="${dir}">
       <head>
         <meta charset="utf-8">
         <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; direction: ${dir}; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
           .header { text-align: center; padding: 20px 0; }
           .logo { font-size: 28px; font-weight: bold; color: #4cb04f; }
@@ -260,21 +347,21 @@ export const sendPasswordResetEmail = async (
             <div class="logo">CleanHouse Pro</div>
           </div>
           <div class="content">
-            <h2>Réinitialisation de mot de passe</h2>
-            <p>Vous avez demandé à réinitialiser votre mot de passe.</p>
-            <p>Entrez ce code dans l'application :</p>
+            <h2>${t.title}</h2>
+            <p>${t.requested}</p>
+            <p>${t.enterCode}</p>
             <div class="code">${code}</div>
-            <p><strong>Ce code expire dans 1 heure.</strong></p>
-            <p>Si vous n'avez pas fait cette demande, ignorez cet email.</p>
+            <p><strong>${t.expiry}</strong></p>
+            <p>${t.ignore}</p>
           </div>
           <div class="footer">
-            <p>CleanHouse - Services de ménage à Paris</p>
+            <p>CleanHouse</p>
           </div>
         </div>
       </body>
       </html>
     `,
-    text: `Votre code de réinitialisation CleanHouse : ${code}\nCe code expire dans 1 heure.`,
+    text: t.text(code),
   });
 };
 
