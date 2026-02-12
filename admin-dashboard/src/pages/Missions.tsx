@@ -1,7 +1,7 @@
 // Page de gestion des missions
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Filter, UserPlus, X, Phone, MapPin, Eye, Mail, Clock, Euro } from 'lucide-react';
+import { Filter, UserPlus, X, Phone, MapPin, Mail, Clock, Euro } from 'lucide-react';
 import { getMissions, assignMission, cancelMission, findProsForPostalCode } from '../services/api';
 import type { Mission, Professional } from '../types';
 import { format } from 'date-fns';

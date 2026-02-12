@@ -752,8 +752,8 @@ export default function Professionals() {
                 <AddressAutocomplete
                   value={editData.address}
                   onChange={(address) => setEditData({ ...editData, address })}
-                  onSelect={(address, city, postalCode) => {
-                    setEditData({ ...editData, address, city, postalCode });
+                  onSelect={(result) => {
+                    setEditData({ ...editData, address: result.address, city: result.city, postalCode: result.postalCode });
                   }}
                 />
               </div>

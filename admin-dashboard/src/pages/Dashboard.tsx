@@ -1,6 +1,6 @@
 // Dashboard principal admin
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Clock, Users, MapPin, AlertCircle, ArrowRight, X, Phone, Mail, Euro } from 'lucide-react';
 import { getDashboardStats } from '../services/api';
 import type { DashboardStats, Mission } from '../types';
