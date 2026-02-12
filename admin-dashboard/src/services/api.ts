@@ -80,6 +80,31 @@ export const getMe = async (): Promise<Admin> => {
   return response.data.data.admin;
 };
 
+// Admin management
+export const getAdmins = async (): Promise<Admin[]> => {
+  const response = await api.get('/auth/admins');
+  return response.data.data.admins;
+};
+
+export const createAdmin = async (data: {
+  email: string;
+  firstName: string;
+  lastName: string;
+  password: string;
+  role?: 'operator' | 'super_admin';
+}): Promise<Admin> => {
+  const response = await api.post('/auth/create', data);
+  return response.data.data.admin;
+};
+
+export const updateAdmin = async (
+  adminId: string,
+  data: { role?: 'operator' | 'super_admin'; isActive?: boolean }
+): Promise<Admin> => {
+  const response = await api.put(`/auth/admins/${adminId}`, data);
+  return response.data.data.admin;
+};
+
 // Dashboard
 export const getDashboardStats = async (): Promise<{ stats: DashboardStats; recentMissions: Mission[] }> => {
   const response = await api.get('/dashboard');

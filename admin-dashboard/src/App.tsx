@@ -15,6 +15,7 @@ import ProForgotPassword from './pages/ProForgotPassword';
 import ProResetPassword from './pages/ProResetPassword';
 import LiveMap from './pages/LiveMap';
 import ProZones from './pages/ProZones';
+import AdminManagement from './pages/AdminManagement';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -75,6 +76,7 @@ function AppRoutes() {
         <Route path="/zones" element={<Zones />} />
         <Route path="/professionals" element={<Professionals />} />
         <Route path="/audit-logs" element={<AuditLogs />} />
+        <Route path="/admins" element={<AdminManagement />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

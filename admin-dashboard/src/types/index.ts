@@ -6,6 +6,7 @@ export interface Admin {
   firstName: string;
   lastName: string;
   role: 'super_admin' | 'operator';
+  isActive?: boolean;
   lastLoginAt?: string;
   createdAt: string;
 }

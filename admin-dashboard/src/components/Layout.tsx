@@ -1,10 +1,10 @@
 // Layout principal avec navigation
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { Home, ClipboardList, MapPin, Users, LogOut, Menu, X, AlertTriangle, History, Navigation, Target } from 'lucide-react';
-import { useState } from 'react';
+import { Home, ClipboardList, MapPin, Users, LogOut, Menu, X, AlertTriangle, History, Navigation, Target, Shield } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 
-const navItems = [
+const baseNavItems = [
   { to: '/', icon: Home, label: 'Dashboard' },
   { to: '/missions', icon: ClipboardList, label: 'Missions' },
   { to: '/live-map', icon: Navigation, label: 'Carte en direct' },
@@ -19,6 +19,14 @@ export default function Layout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { admin, logout } = useAuth();
   const navigate = useNavigate();
+
+  const navItems = useMemo(() => {
+    const items = [...baseNavItems];
+    if (admin?.role === 'super_admin') {
+      items.push({ to: '/admins', icon: Shield, label: 'Admins' });
+    }
+    return items;
+  }, [admin?.role]);
 
   const handleLogout = async () => {
     await logout();

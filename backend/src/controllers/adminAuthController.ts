@@ -240,6 +240,116 @@ export const checkAuth = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+// Lister tous les admins (super_admin uniquement)
+export const getAdmins = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { role } = req.query;
+
+    const where: Record<string, unknown> = {};
+    if (role && ['operator', 'super_admin'].includes(role as string)) {
+      where.role = role as 'operator' | 'super_admin';
+    }
+
+    const admins = await prisma.admin.findMany({
+      where,
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        isActive: true,
+        lastLoginAt: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({
+      success: true,
+      data: { admins },
+    });
+  } catch (error) {
+    console.error('Get admins error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur',
+    });
+  }
+};
+
+// Modifier un admin (rôle et statut)
+export const updateAdmin = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { adminId } = req.params;
+    const { role, isActive } = req.body;
+
+    // Empêcher un super_admin de se désactiver lui-même
+    if (adminId === req.admin!.id && isActive === false) {
+      res.status(400).json({
+        success: false,
+        message: 'Vous ne pouvez pas désactiver votre propre compte',
+      });
+      return;
+    }
+
+    // Empêcher un super_admin de rétrograder son propre rôle
+    if (adminId === req.admin!.id && role && role !== 'super_admin') {
+      res.status(400).json({
+        success: false,
+        message: 'Vous ne pouvez pas modifier votre propre rôle',
+      });
+      return;
+    }
+
+    const existingAdmin = await prisma.admin.findUnique({
+      where: { id: adminId },
+    });
+
+    if (!existingAdmin) {
+      res.status(404).json({
+        success: false,
+        message: 'Administrateur non trouvé',
+      });
+      return;
+    }
+
+    const updateData: Record<string, unknown> = {};
+    if (role !== undefined && ['operator', 'super_admin'].includes(role)) {
+      updateData.role = role as 'operator' | 'super_admin';
+    }
+    if (isActive !== undefined) {
+      updateData.isActive = isActive;
+    }
+
+    const admin = await prisma.admin.update({
+      where: { id: adminId },
+      data: updateData,
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        isActive: true,
+        lastLoginAt: true,
+        createdAt: true,
+      },
+    });
+
+    res.json({
+      success: true,
+      data: { admin },
+    });
+  } catch (error) {
+    console.error('Update admin error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur serveur',
+    });
+  }
+};
+
 // Créer un admin (super_admin uniquement)
 export const createAdmin = async (req: Request, res: Response): Promise<void> => {
   try {

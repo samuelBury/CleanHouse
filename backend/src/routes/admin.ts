@@ -30,6 +30,8 @@ router.post('/auth/refresh', adminAuthController.refreshToken);
 router.post('/auth/logout', adminAuthController.logout);
 router.get('/auth/me', authenticateAdmin, adminAuthController.checkAuth);
 router.post('/auth/create', authenticateAdmin, requireSuperAdmin, adminAuthController.createAdmin);
+router.get('/auth/admins', authenticateAdmin, requireSuperAdmin, adminAuthController.getAdmins);
+router.put('/auth/admins/:adminId', authenticateAdmin, requireSuperAdmin, adminAuthController.updateAdmin);
 
 // ============ DASHBOARD ============
 router.get('/dashboard', authenticateAdmin, loadAdminZones, adminController.getDashboardStats);
