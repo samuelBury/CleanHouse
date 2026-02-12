@@ -62,7 +62,7 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<vo
             },
           },
           professional: {
-            select: { firstName: true, lastName: true },
+            select: { id: true, firstName: true, lastName: true, phone: true, rating: true },
           },
         },
       }),
@@ -83,13 +83,16 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<vo
           service: m.booking.service,
           date: m.booking.date,
           time: m.booking.time,
+          duration: m.booking.duration,
           address: m.booking.address,
           price: m.booking.price,
           proEarning: m.proEarning,
+          notes: m.booking.notes,
           client: m.booking.user,
-          professional: m.professional
-            ? `${m.professional.firstName} ${m.professional.lastName}`
-            : null,
+          professional: m.professional || null,
+          assignedAt: m.assignedAt,
+          startedAt: m.startedAt,
+          completedAt: m.completedAt,
           createdAt: m.createdAt,
         })),
       },
