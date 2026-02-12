@@ -1,6 +1,6 @@
 // Layout principal avec navigation
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { Home, ClipboardList, Users, LogOut, Menu, X, AlertTriangle, History, Navigation, Target, Shield } from 'lucide-react';
+import { Home, ClipboardList, Users, LogOut, Menu, X, AlertTriangle, History, Navigation, Shield } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 
@@ -8,7 +8,6 @@ const baseNavItems = [
   { to: '/', icon: Home, label: 'Dashboard' },
   { to: '/missions', icon: ClipboardList, label: 'Missions' },
   { to: '/live-map', icon: Navigation, label: 'Carte en direct' },
-  { to: '/pro-zones', icon: Target, label: 'Zones Pro' },
   { to: '/urgencies', icon: AlertTriangle, label: 'Urgences' },
   { to: '/professionals', icon: Users, label: 'Professionnels' },
   { to: '/audit-logs', icon: History, label: 'Historique' },
