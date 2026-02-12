@@ -1,7 +1,7 @@
 // Page de gestion des missions
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Filter, UserPlus, X, Phone, MapPin } from 'lucide-react';
+import { Filter, UserPlus, X, Phone, MapPin, Eye, Mail, Clock, Euro } from 'lucide-react';
 import { getMissions, assignMission, cancelMission, findProsForPostalCode } from '../services/api';
 import type { Mission, Professional } from '../types';
 import { format } from 'date-fns';
@@ -37,6 +37,7 @@ export default function Missions() {
   const [availablePros, setAvailablePros] = useState<Professional[]>([]);
   const [isAssigning, setIsAssigning] = useState(false);
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '');
+  const [detailMission, setDetailMission] = useState<Mission | null>(null);
 
   useEffect(() => {
     loadMissions();
@@ -175,7 +176,7 @@ export default function Missions() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {missions.map((mission) => (
-                  <tr key={mission.id} className="hover:bg-gray-50">
+                  <tr key={mission.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setDetailMission(mission)}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{mission.client.name}</div>
                       {mission.client.phone && (
@@ -213,7 +214,7 @@ export default function Missions() {
                         {STATUS_LABELS[mission.status]}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm" onClick={(e) => e.stopPropagation()}>
                       <div className="flex gap-2">
                         {mission.status === 'pending' && (
                           <button
@@ -247,6 +248,155 @@ export default function Missions() {
           </div>
         )}
       </div>
+
+      {/* Modal détail mission */}
+      {detailMission && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <h2 className="text-lg font-semibold text-gray-900">Détail de la mission</h2>
+                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${STATUS_COLORS[detailMission.status]}`}>
+                  {STATUS_LABELS[detailMission.status]}
+                </span>
+              </div>
+              <button onClick={() => setDetailMission(null)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-73px)] space-y-5">
+              {/* Client */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">Client</h3>
+                <div className="bg-gray-50 rounded-lg p-4 space-y-1">
+                  <p className="font-medium text-gray-900">{detailMission.client.name}</p>
+                  {detailMission.client.email && (
+                    <p className="text-sm text-gray-600 flex items-center gap-1">
+                      <Mail className="w-3.5 h-3.5" /> {detailMission.client.email}
+                    </p>
+                  )}
+                  {detailMission.client.phone && (
+                    <p className="text-sm text-gray-600 flex items-center gap-1">
+                      <Phone className="w-3.5 h-3.5" /> {detailMission.client.phone}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Service */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">Service</h3>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-500">Type</p>
+                      <p className="font-medium text-gray-900">{SERVICE_LABELS[detailMission.service]}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Durée</p>
+                      <p className="font-medium text-gray-900">{detailMission.duration}h</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Prix client</p>
+                      <p className="font-medium text-gray-900 flex items-center gap-1">
+                        <Euro className="w-3.5 h-3.5" /> {detailMission.price}€
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-gray-200">
+                    <p className="text-sm text-gray-500">Gain pro</p>
+                    <p className="font-medium text-green-600">{detailMission.proEarning}€</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Date */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">Date & Heure</h3>
+                <div className="bg-gray-50 rounded-lg p-4 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-gray-400" />
+                  <p className="font-medium text-gray-900">
+                    {format(new Date(detailMission.date), 'EEEE dd MMMM yyyy', { locale: fr })} à {detailMission.time}
+                  </p>
+                </div>
+              </div>
+
+              {/* Adresse */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">Adresse</h3>
+                <div className="bg-gray-50 rounded-lg p-4 flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-gray-400 shrink-0" />
+                  <p className="font-medium text-gray-900">{detailMission.address}</p>
+                </div>
+              </div>
+
+              {/* Notes */}
+              {detailMission.notes && (
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">Notes</h3>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{detailMission.notes}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Pro assigné */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">Professionnel assigné</h3>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  {detailMission.professional ? (
+                    <div className="space-y-1">
+                      <p className="font-medium text-gray-900">
+                        {detailMission.professional.firstName} {detailMission.professional.lastName}
+                      </p>
+                      {detailMission.professional.phone && (
+                        <p className="text-sm text-gray-600 flex items-center gap-1">
+                          <Phone className="w-3.5 h-3.5" /> {detailMission.professional.phone}
+                        </p>
+                      )}
+                      {detailMission.professional.rating != null && (
+                        <p className="text-sm text-gray-600">Note : {detailMission.professional.rating}/5</p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-400 italic">Non assigné</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Timestamps */}
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">Historique</h3>
+                <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Créée le</span>
+                    <span className="text-gray-900">{format(new Date(detailMission.createdAt), "dd MMM yyyy 'à' HH:mm", { locale: fr })}</span>
+                  </div>
+                  {detailMission.assignedAt && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Assignée le</span>
+                      <span className="text-gray-900">{format(new Date(detailMission.assignedAt), "dd MMM yyyy 'à' HH:mm", { locale: fr })}</span>
+                    </div>
+                  )}
+                  {detailMission.startedAt && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Démarrée le</span>
+                      <span className="text-gray-900">{format(new Date(detailMission.startedAt), "dd MMM yyyy 'à' HH:mm", { locale: fr })}</span>
+                    </div>
+                  )}
+                  {detailMission.completedAt && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Terminée le</span>
+                      <span className="text-gray-900">{format(new Date(detailMission.completedAt), "dd MMM yyyy 'à' HH:mm", { locale: fr })}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal d'assignation */}
       {selectedMission && (
