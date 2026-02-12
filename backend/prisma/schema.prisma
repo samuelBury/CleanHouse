@@ -107,7 +107,7 @@ model Professional {
   postalCode                String?
   latitude                  Float?
   longitude                 Float?
-  radius                    Int                  @default(10) // Rayon d'intervention en km
+  radius                    Int                  @default(5) // Rayon d'intervention en km
   transportMode             TransportMode?       // Moyen de transport
   bio                       String?
   rating                    Float                @default(5.0)

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>CleanHouse - Workflow de Test iOS</title>
+<style>
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+  body { font-family: -apple-system, Helvetica Neue, Arial, sans-serif; max-width: 750px; margin: 40px auto; padding: 0 30px; color: #1a1a1a; line-height: 1.6; }
+  h1 { text-align: center; font-size: 26px; margin-bottom: 5px; color: #0a0a0a; }
+  .subtitle { text-align: center; color: #666; font-size: 14px; margin-bottom: 35px; }
+  h2 { font-size: 18px; color: #fff; background: #2563eb; padding: 8px 14px; border-radius: 6px; margin-top: 30px; }
+  h3 { font-size: 15px; color: #2563eb; margin-bottom: 5px; }
+  .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px 20px; margin: 12px 0; }
+  .card-green { border-left: 4px solid #22c55e; }
+  .card-blue { border-left: 4px solid #2563eb; }
+  .card-orange { border-left: 4px solid #f59e0b; }
+  code { background: #1e293b; color: #e2e8f0; padding: 2px 7px; border-radius: 4px; font-size: 13px; }
+  .cmd { background: #1e293b; color: #e2e8f0; padding: 12px 16px; border-radius: 6px; margin: 8px 0; font-family: 'SF Mono', Menlo, monospace; font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 14px; }
+  th { background: #2563eb; color: #fff; padding: 10px 12px; text-align: left; }
+  td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; }
+  tr:nth-child(even) { background: #f8fafc; }
+  .tag { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+  .tag-fast { background: #dcfce7; color: #166534; }
+  .tag-medium { background: #dbeafe; color: #1e40af; }
+  .tag-slow { background: #fef3c7; color: #92400e; }
+  .divider { border: none; border-top: 2px dashed #e2e8f0; margin: 30px 0; }
+  .footer { text-align: center; color: #94a3b8; font-size: 12px; margin-top: 40px; }
+  .emoji { font-size: 20px; vertical-align: middle; }
+</style>
+</head>
+<body>
+
+<h1>CleanHouse - Workflow de Test iOS</h1>
+<p class="subtitle">Fiche pratique pour tester l'app sur iPhone</p>
+
+<h2>1. Developpement quotidien <span class="tag tag-fast">Instantane</span></h2>
+<div class="card card-green">
+  <h3>Expo Dev Server (Hot Reload)</h3>
+  <p>Pour le developpement au jour le jour. Les changements apparaissent en temps reel sur le telephone.</p>
+  <div class="cmd">npx expo start</div>
+  <p><strong>Quand :</strong> Modifications de code JS/TS, styles, logique, composants, ecrans.</p>
+  <p><strong>Comment :</strong> Scannez le QR code avec l'appareil photo de l'iPhone.</p>
+</div>
+
+<h2>2. Mise a jour OTA (Over-The-Air) <span class="tag tag-medium">~30 sec</span></h2>
+<div class="card card-blue">
+  <h3>EAS Update</h3>
+  <p>Met a jour l'app deja installee sans rebuild. Ideal pour tester sur l'app preview.</p>
+  <div class="cmd">eas update --branch preview --message "description"</div>
+  <p><strong>Quand :</strong> Vous voulez mettre a jour l'app preview installee sur le telephone.</p>
+  <p><strong>Comment :</strong> L'app se met a jour automatiquement au prochain lancement.</p>
+</div>
+
+<h2>3. Build complet EAS <span class="tag tag-slow">Long (queue)</span></h2>
+<div class="card card-orange">
+  <h3>EAS Build</h3>
+  <p>Recompile entierement l'app native. Necessaire uniquement pour les changements natifs.</p>
+  <div class="cmd">eas build --platform ios --profile preview</div>
+  <p><strong>Quand utiliser :</strong></p>
+  <ul>
+    <li>Ajout/modification d'une dependance native</li>
+    <li>Changement dans <code>app.json</code> (permissions, icone, splash...)</li>
+    <li>Modification d'un plugin Expo</li>
+  </ul>
+  <p><strong>Astuce :</strong> Ajoutez <code>--local</code> pour compiler sur votre Mac (necessite Xcode, pas de queue).</p>
+</div>
+
+<hr class="divider">
+
+<h2>Resume rapide</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Type de changement</th>
+      <th>Methode</th>
+      <th>Temps</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Code JS/TS, styles, logique</td>
+      <td><code>npx expo start</code></td>
+      <td><span class="tag tag-fast">Instantane</span></td>
+    </tr>
+    <tr>
+      <td>MAJ app preview installee</td>
+      <td><code>eas update</code></td>
+      <td><span class="tag tag-medium">~30 sec</span></td>
+    </tr>
+    <tr>
+      <td>Nouvelle lib native / config</td>
+      <td><code>eas build</code></td>
+      <td><span class="tag tag-slow">5-30 min</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<hr class="divider">
+
+<h2>Commandes utiles</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Action</th>
+      <th>Commande</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Voir les builds en cours</td>
+      <td><code>eas build:list</code></td>
+    </tr>
+    <tr>
+      <td>Voir un build specifique</td>
+      <td><code>eas build:view [ID]</code></td>
+    </tr>
+    <tr>
+      <td>Annuler un build</td>
+      <td><code>eas build:cancel [ID]</code></td>
+    </tr>
+    <tr>
+      <td>Build local (sans queue)</td>
+      <td><code>eas build --platform ios --local</code></td>
+    </tr>
+    <tr>
+      <td>Soumettre a l'App Store</td>
+      <td><code>eas submit --platform ios</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="footer">
+  CleanHouse &mdash; Projet @samy00/CleanAppExpo
+</div>
+
+</body>
+</html>
