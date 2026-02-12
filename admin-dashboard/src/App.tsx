@@ -6,7 +6,6 @@ import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Missions from './pages/Missions';
-import Zones from './pages/Zones';
 import Professionals from './pages/Professionals';
 import Urgencies from './pages/Urgencies';
 import AuditLogs from './pages/AuditLogs';
@@ -73,7 +72,6 @@ function AppRoutes() {
         <Route path="/live-map" element={<LiveMap />} />
         <Route path="/pro-zones" element={<ProZones />} />
         <Route path="/urgencies" element={<Urgencies />} />
-        <Route path="/zones" element={<Zones />} />
         <Route path="/professionals" element={<Professionals />} />
         <Route path="/audit-logs" element={<AuditLogs />} />
         <Route path="/admins" element={<AdminManagement />} />
