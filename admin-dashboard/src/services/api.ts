@@ -195,6 +195,14 @@ export const createProfessional = async (data: {
   return response.data.data.professional;
 };
 
+export const updateProfessional = async (
+  professionalId: string,
+  data: { language?: string; address?: string; city?: string; postalCode?: string; phone?: string; firstName?: string; lastName?: string }
+): Promise<Professional> => {
+  const response = await api.put(`/professionals/${professionalId}`, data);
+  return response.data.data.professional;
+};
+
 export const verifyProfessional = async (professionalId: string, isVerified: boolean): Promise<Professional> => {
   const response = await api.put(`/professionals/${professionalId}/verify`, { isVerified });
   return response.data.data.professional;

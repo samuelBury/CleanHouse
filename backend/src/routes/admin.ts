@@ -82,6 +82,7 @@ router.post(
   adminController.createProfessional
 );
 router.get('/professionals/:professionalId', authenticateAdmin, loadAdminZones, checkProfessionalAccess, adminController.getProfessionalDetail);
+router.put('/professionals/:professionalId', authenticateAdmin, loadAdminZones, checkProfessionalAccess, adminController.updateProfessional);
 router.put('/professionals/:professionalId/verify', authenticateAdmin, loadAdminZones, checkProfessionalAccess, adminController.verifyProfessional);
 router.get('/professionals/:professionalId/notes', authenticateAdmin, loadAdminZones, checkProfessionalAccess, adminController.getProfessionalNotes);
 router.post('/professionals/:professionalId/notes', authenticateAdmin, loadAdminZones, checkProfessionalAccess, adminController.addProfessionalNote);

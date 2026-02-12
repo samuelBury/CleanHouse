@@ -1,8 +1,8 @@
 // Page de gestion des professionnels
 import { useState, useEffect } from 'react';
-import { Search, CheckCircle, XCircle, Star, MapPin, Plus, X, Upload, FileText } from 'lucide-react';
+import { Search, CheckCircle, XCircle, Star, MapPin, Plus, X, Upload, FileText, Pencil } from 'lucide-react';
 import AddressAutocomplete from '../components/AddressAutocomplete';
-import { getProfessionals, verifyProfessional, createProfessional } from '../services/api';
+import { getProfessionals, verifyProfessional, createProfessional, updateProfessional } from '../services/api';
 import type { Professional } from '../types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -34,6 +34,12 @@ export default function Professionals() {
   const [carteVitale, setCarteVitale] = useState<File | null>(null);
   const [formError, setFormError] = useState('');
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
+
+  // Edit modal state
+  const [editingPro, setEditingPro] = useState<Professional | null>(null);
+  const [editData, setEditData] = useState({ language: 'fr', address: '', city: '', postalCode: '' });
+  const [isEditing, setIsEditing] = useState(false);
+  const [editError, setEditError] = useState('');
 
   useEffect(() => {
     loadProfessionals();
@@ -110,6 +116,40 @@ export default function Professionals() {
       setFormError(error.response?.data?.message || 'Erreur lors de la création');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const openEditModal = (pro: Professional) => {
+    setEditingPro(pro);
+    setEditData({
+      language: pro.language || 'fr',
+      address: pro.address || '',
+      city: pro.city || '',
+      postalCode: pro.postalCode || '',
+    });
+    setEditError('');
+  };
+
+  const handleEditProfessional = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPro) return;
+    setEditError('');
+    setIsEditing(true);
+
+    try {
+      await updateProfessional(editingPro.id, {
+        language: editData.language,
+        address: editData.address || undefined,
+        city: editData.city || undefined,
+        postalCode: editData.postalCode || undefined,
+      });
+      setEditingPro(null);
+      setToast({ message: 'Professionnel mis à jour avec succès', type: 'success' });
+      loadProfessionals();
+    } catch (error: any) {
+      setEditError(error.response?.data?.message || 'Erreur lors de la mise à jour');
+    } finally {
+      setIsEditing(false);
     }
   };
 
@@ -282,21 +322,29 @@ export default function Professionals() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {pro.isVerified ? (
+                      <div className="flex flex-col gap-2">
                         <button
-                          onClick={() => handleVerify(pro.id, false)}
-                          className="text-red-600 hover:text-red-700 text-sm"
+                          onClick={() => openEditModal(pro)}
+                          className="text-teal-600 hover:text-teal-700 text-sm flex items-center gap-1"
                         >
-                          Retirer vérification
+                          <Pencil className="w-4 h-4" /> Modifier
                         </button>
-                      ) : (
-                        <button
-                          onClick={() => handleVerify(pro.id, true)}
-                          className="text-green-600 hover:text-green-700 text-sm flex items-center gap-1"
-                        >
-                          <CheckCircle className="w-4 h-4" /> Vérifier
-                        </button>
-                      )}
+                        {pro.isVerified ? (
+                          <button
+                            onClick={() => handleVerify(pro.id, false)}
+                            className="text-red-600 hover:text-red-700 text-sm"
+                          >
+                            Retirer vérification
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleVerify(pro.id, true)}
+                            className="text-green-600 hover:text-green-700 text-sm flex items-center gap-1"
+                          >
+                            <CheckCircle className="w-4 h-4" /> Vérifier
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -645,6 +693,110 @@ export default function Professionals() {
                   className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50"
                 >
                   {isSubmitting ? 'Création...' : 'Créer et envoyer invitation'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Modifier un professionnel */}
+      {editingPro && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Modifier {editingPro.firstName} {editingPro.lastName}
+              </h2>
+              <button
+                onClick={() => setEditingPro(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditProfessional} className="p-4 space-y-4">
+              {editError && (
+                <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
+                  {editError}
+                </div>
+              )}
+
+              {/* Langue */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Langue
+                </label>
+                <select
+                  value={editData.language}
+                  onChange={(e) => setEditData({ ...editData, language: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500"
+                >
+                  <option value="fr">Français</option>
+                  <option value="en">English</option>
+                  <option value="ru">Русский</option>
+                  <option value="ro">Română</option>
+                  <option value="pt">Português</option>
+                  <option value="ar">العربية</option>
+                  <option value="es">Español</option>
+                  <option value="zh">中文</option>
+                </select>
+              </div>
+
+              {/* Adresse */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Adresse
+                </label>
+                <AddressAutocomplete
+                  value={editData.address}
+                  onChange={(address) => setEditData({ ...editData, address })}
+                  onSelect={(address, city, postalCode) => {
+                    setEditData({ ...editData, address, city, postalCode });
+                  }}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Code postal
+                  </label>
+                  <input
+                    type="text"
+                    value={editData.postalCode}
+                    onChange={(e) => setEditData({ ...editData, postalCode: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Ville
+                  </label>
+                  <input
+                    type="text"
+                    value={editData.city}
+                    onChange={(e) => setEditData({ ...editData, city: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingPro(null)}
+                  className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={isEditing}
+                  className="flex-1 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50"
+                >
+                  {isEditing ? 'Mise à jour...' : 'Enregistrer'}
                 </button>
               </div>
             </form>

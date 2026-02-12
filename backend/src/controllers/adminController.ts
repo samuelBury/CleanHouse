@@ -694,6 +694,95 @@ export const verifyProfessional = async (req: Request, res: Response): Promise<v
   }
 };
 
+// Mettre à jour un professionnel (langue, adresse, etc.)
+export const updateProfessional = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { professionalId } = req.params;
+    const { language, address, city, postalCode, phone, firstName, lastName } = req.body;
+
+    const data: Record<string, unknown> = {};
+    if (language !== undefined) data.language = language;
+    if (phone !== undefined) data.phone = phone;
+    if (firstName !== undefined) data.firstName = firstName;
+    if (lastName !== undefined) data.lastName = lastName;
+    if (city !== undefined) data.city = city;
+    if (postalCode !== undefined) data.postalCode = postalCode;
+
+    // Si l'adresse change, re-géocoder
+    if (address !== undefined) {
+      data.address = address;
+      const coordinates = await geocodeAddress(address);
+      if (coordinates) {
+        data.latitude = coordinates.lat;
+        data.longitude = coordinates.lng;
+      }
+    }
+
+    if (Object.keys(data).length === 0) {
+      res.status(400).json({ success: false, message: 'Aucun champ à mettre à jour' });
+      return;
+    }
+
+    const professional = await prisma.professional.update({
+      where: { id: professionalId },
+      data,
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        address: true,
+        city: true,
+        postalCode: true,
+        language: true,
+        isVerified: true,
+        isAvailable: true,
+        rating: true,
+        totalMissions: true,
+        createdAt: true,
+        zones: {
+          include: {
+            zone: {
+              select: { id: true, name: true },
+            },
+          },
+        },
+      },
+    });
+
+    const formattedPro = {
+      ...professional,
+      zones: professional.zones.map((pz: any) => ({
+        id: pz.zone.id,
+        name: pz.zone.name,
+        priority: pz.priority,
+      })),
+    };
+
+    // Audit log
+    const adminId = (req as any).admin?.id;
+    if (adminId) {
+      await auditService.createAuditLog({
+        adminId,
+        action: 'professional.update',
+        entityType: 'professional',
+        entityId: professionalId,
+        payload: data as unknown as auditService.AuditPayload,
+      });
+    }
+
+    res.json({
+      success: true,
+      data: { professional: formattedPro },
+      message: 'Professionnel mis à jour',
+    });
+  } catch (error) {
+    console.error('Update professional error:', error);
+    res.status(500).json({ success: false, message: 'Erreur serveur' });
+  }
+};
+
 // Trouver les professionnels disponibles pour une zone (par code postal)
 export const findProsForPostalCode = async (req: Request, res: Response): Promise<void> => {
   try {
