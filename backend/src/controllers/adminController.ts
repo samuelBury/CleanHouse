@@ -62,7 +62,7 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<vo
             },
           },
           professional: {
-            select: { id: true, firstName: true, lastName: true, phone: true, rating: true },
+            select: { id: true, firstName: true, lastName: true, phone: true, rating: true, latitude: true, longitude: true, address: true },
           },
         },
       }),
@@ -85,6 +85,8 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<vo
           time: m.booking.time,
           duration: m.booking.duration,
           address: m.booking.address,
+          latitude: m.booking.latitude,
+          longitude: m.booking.longitude,
           price: m.booking.price,
           proEarning: m.proEarning,
           notes: m.booking.notes,
@@ -149,7 +151,7 @@ export const getMissions = async (req: Request, res: Response): Promise<void> =>
             },
           },
           professional: {
-            select: { id: true, firstName: true, lastName: true, phone: true },
+            select: { id: true, firstName: true, lastName: true, phone: true, latitude: true, longitude: true, address: true },
           },
         },
       }),

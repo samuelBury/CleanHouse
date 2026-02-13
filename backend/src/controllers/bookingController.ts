@@ -118,6 +118,25 @@ export const getBooking = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
+// Géocoder une adresse via Nominatim (OpenStreetMap)
+const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
+  try {
+    const encodedAddress = encodeURIComponent(address);
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodedAddress}&limit=1`,
+      { headers: { 'User-Agent': 'CleanHouse-App/1.0' } }
+    );
+    const data = await response.json() as Array<{ lat: string; lon: string }>;
+    if (data && data.length > 0) {
+      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+    }
+    return null;
+  } catch (error) {
+    console.error('Geocoding error:', error);
+    return null;
+  }
+};
+
 // Helper pour parser une date DD/MM/YYYY
 const parseDateDDMMYYYY = (dateStr: string): Date => {
   // Si c'est déjà une date ISO, la parser directement
@@ -143,6 +162,17 @@ export const createBooking = asyncHandler(async (req: Request, res: Response) =>
   // Parser la date correctement (DD/MM/YYYY)
   const parsedDate = parseDateDDMMYYYY(date);
 
+  // Géocoder l'adresse si les coordonnées ne sont pas fournies
+  let finalLat = latitude;
+  let finalLng = longitude;
+  if (!finalLat || !finalLng) {
+    const coords = await geocodeAddress(address);
+    if (coords) {
+      finalLat = coords.lat;
+      finalLng = coords.lng;
+    }
+  }
+
   // Créer la réservation (sans professionnel assigné, ce sera fait quand un pro accepte)
   const booking = await prisma.booking.create({
     data: {
@@ -152,8 +182,8 @@ export const createBooking = asyncHandler(async (req: Request, res: Response) =>
       time,
       duration,
       address,
-      latitude,
-      longitude,
+      latitude: finalLat,
+      longitude: finalLng,
       price,
       professional: null, // Sera assigné quand un pro accepte la mission
       notes,

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Clock, Users, MapPin, AlertCircle, ArrowRight, X, Phone, Mail, Euro } from 'lucide-react';
 import ProDetailModal from '../components/ProDetailModal';
+import MissionMap from '../components/MissionMap';
 import { getDashboardStats } from '../services/api';
 import type { DashboardStats, Mission } from '../types';
 import { format } from 'date-fns';
@@ -279,6 +280,21 @@ export default function Dashboard() {
                   <p className="font-medium text-gray-900">{detailMission.address}</p>
                 </div>
               </div>
+
+              {/* Carte */}
+              {detailMission.latitude && detailMission.longitude && (
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">Localisation</h3>
+                  <MissionMap
+                    missionLat={detailMission.latitude}
+                    missionLng={detailMission.longitude}
+                    missionAddress={detailMission.address}
+                    proLat={detailMission.professional?.latitude}
+                    proLng={detailMission.professional?.longitude}
+                    proName={detailMission.professional ? `${detailMission.professional.firstName} ${detailMission.professional.lastName}` : undefined}
+                  />
+                </div>
+              )}
 
               {/* Notes */}
               {detailMission.notes && (
