@@ -187,13 +187,18 @@ export default function ProDetailModal({ proId, onClose }: Props) {
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">Zones ({detailPro.zones.length})</h3>
                   <div className="flex flex-wrap gap-2">
-                    {detailPro.zones.map(zone => (
-                      <span key={zone.id} className="inline-flex items-center gap-1 px-3 py-1.5 bg-purple-50 text-purple-700 text-sm rounded-lg border border-purple-200">
-                        <MapPin className="w-3.5 h-3.5" />
-                        {zone.name}
-                        <span className="text-purple-400 ml-1 text-xs">({zone.postalCodes.length} CP)</span>
-                      </span>
-                    ))}
+                    {detailPro.zones.map((z: any) => {
+                      const zone = z.zone || z;
+                      return (
+                        <span key={zone.id || z.id} className="inline-flex items-center gap-1 px-3 py-1.5 bg-purple-50 text-purple-700 text-sm rounded-lg border border-purple-200">
+                          <MapPin className="w-3.5 h-3.5" />
+                          {zone.name}
+                          {zone.postalCodes && (
+                            <span className="text-purple-400 ml-1 text-xs">({zone.postalCodes.length} CP)</span>
+                          )}
+                        </span>
+                      );
+                    })}
                   </div>
                 </div>
               )}
