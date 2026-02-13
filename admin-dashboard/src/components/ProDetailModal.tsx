@@ -1,5 +1,5 @@
 // Modal Fiche Pro - Composant partagé
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, CheckCircle, XCircle, Star, MapPin, Phone, Mail, MessageSquare, Euro, Send } from 'lucide-react';
 import { getProfessionalDetail, addProfessionalNote } from '../services/api';
 import type { ProfessionalDetail } from '../types';
@@ -38,18 +38,20 @@ export default function ProDetailModal({ proId, onClose }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [newNote, setNewNote] = useState('');
   const [isAddingNote, setIsAddingNote] = useState(false);
-  const [loadedProId, setLoadedProId] = useState<string | null>(null);
 
-  // Charger les détails quand proId change
-  if (proId && proId !== loadedProId && !isLoading) {
-    setLoadedProId(proId);
+  useEffect(() => {
+    if (!proId) {
+      setDetailPro(null);
+      setNewNote('');
+      return;
+    }
     setIsLoading(true);
     setDetailPro(null);
     getProfessionalDetail(proId)
       .then(data => setDetailPro(data))
       .catch(err => console.error('Error loading professional detail:', err))
       .finally(() => setIsLoading(false));
-  }
+  }, [proId]);
 
   if (!proId) return null;
 
@@ -68,9 +70,6 @@ export default function ProDetailModal({ proId, onClose }: Props) {
   };
 
   const handleClose = () => {
-    setLoadedProId(null);
-    setDetailPro(null);
-    setNewNote('');
     onClose();
   };
 
