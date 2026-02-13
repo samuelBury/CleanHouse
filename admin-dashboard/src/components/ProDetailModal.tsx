@@ -218,24 +218,29 @@ export default function ProDetailModal({ proId, onClose }: Props) {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
-                        {detailPro.missions.slice(0, 10).map(mission => (
-                          <tr key={mission.id} className="text-sm">
-                            <td className="px-4 py-2 text-gray-700">
-                              {format(new Date(mission.date), 'dd/MM/yyyy', { locale: fr })}
-                            </td>
-                            <td className="px-4 py-2 text-gray-700">
-                              {SERVICE_LABELS[mission.service] || mission.service}
-                            </td>
-                            <td className="px-4 py-2">
-                              <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${STATUS_COLORS[mission.status]}`}>
-                                {STATUS_LABELS[mission.status] || mission.status}
-                              </span>
-                            </td>
-                            <td className="px-4 py-2 text-right text-gray-700 font-medium">
-                              {mission.proEarning}€
-                            </td>
-                          </tr>
-                        ))}
+                        {detailPro.missions.slice(0, 10).map((m: any) => {
+                          const booking = m.booking || {};
+                          const date = booking.date || m.date;
+                          const service = booking.service || m.service;
+                          return (
+                            <tr key={m.id} className="text-sm">
+                              <td className="px-4 py-2 text-gray-700">
+                                {date ? format(new Date(date), 'dd/MM/yyyy', { locale: fr }) : '—'}
+                              </td>
+                              <td className="px-4 py-2 text-gray-700">
+                                {SERVICE_LABELS[service] || service || '—'}
+                              </td>
+                              <td className="px-4 py-2">
+                                <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${STATUS_COLORS[m.status] || ''}`}>
+                                  {STATUS_LABELS[m.status] || m.status}
+                                </span>
+                              </td>
+                              <td className="px-4 py-2 text-right text-gray-700 font-medium">
+                                {m.proEarning}€
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
