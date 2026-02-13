@@ -523,6 +523,8 @@ export const getProLocationForMission = asyncHandler(async (req: Request, res: R
           address: true,
           latitude: true,
           longitude: true,
+          date: true,
+          time: true,
         },
       },
     },
@@ -536,8 +538,30 @@ export const getProLocationForMission = asyncHandler(async (req: Request, res: R
     throw createError('Aucun professionnel assigné', 404);
   }
 
-  // Le pro doit avoir activé le partage de localisation et la mission doit être en cours
-  if (!mission.professional.isLocationSharing || mission.status !== 'in_progress') {
+  // Vérifier si on est dans les 30 minutes avant le début de la prestation
+  const isWithin30MinBeforeStart = (): boolean => {
+    if (mission.status !== 'assigned' || !mission.booking.date || !mission.booking.time) {
+      return false;
+    }
+    const [hours, minutes] = mission.booking.time.split(':').map(Number);
+    const startTime = new Date(mission.booking.date);
+    startTime.setHours(hours, minutes, 0, 0);
+    const now = new Date();
+    const thirtyMinBefore = new Date(startTime.getTime() - 30 * 60 * 1000);
+    return now >= thirtyMinBefore && now < startTime;
+  };
+
+  const canTrack = mission.status === 'in_progress' || isWithin30MinBeforeStart();
+
+  // Le pro doit avoir activé le partage de localisation et la mission doit être traçable
+  if (!mission.professional.isLocationSharing || !canTrack) {
+    let message: string;
+    if (!canTrack) {
+      message = 'La localisation sera disponible 30 minutes avant la prestation';
+    } else {
+      message = 'Le professionnel n\'a pas encore activé le partage de localisation';
+    }
+
     res.json({
       success: true,
       data: {
@@ -547,9 +571,7 @@ export const getProLocationForMission = asyncHandler(async (req: Request, res: R
           avatar: mission.professional.avatar,
         },
         location: null,
-        message: mission.status !== 'in_progress'
-          ? 'La mission n\'a pas encore commencé'
-          : 'Le professionnel n\'a pas encore activé le partage de localisation',
+        message,
         destination: {
           address: mission.booking.address,
           latitude: mission.booking.latitude,
