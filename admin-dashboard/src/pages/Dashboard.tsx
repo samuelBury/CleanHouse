@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Clock, Users, MapPin, AlertCircle, ArrowRight, X, Phone, Mail, Euro } from 'lucide-react';
+import ProDetailModal from '../components/ProDetailModal';
 import { getDashboardStats } from '../services/api';
 import type { DashboardStats, Mission } from '../types';
 import { format } from 'date-fns';
@@ -34,6 +35,7 @@ export default function Dashboard() {
   const [recentMissions, setRecentMissions] = useState<Mission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [detailMission, setDetailMission] = useState<Mission | null>(null);
+  const [detailProId, setDetailProId] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -294,9 +296,12 @@ export default function Dashboard() {
                 <div className="bg-gray-50 rounded-lg p-4">
                   {detailMission.professional ? (
                     <div className="space-y-1">
-                      <p className="font-medium text-gray-900">
+                      <button
+                        onClick={() => setDetailProId(detailMission.professional!.id)}
+                        className="font-medium text-teal-600 hover:text-teal-700 hover:underline"
+                      >
                         {detailMission.professional.firstName} {detailMission.professional.lastName}
-                      </p>
+                      </button>
                       {detailMission.professional.phone && (
                         <p className="text-sm text-gray-600 flex items-center gap-1">
                           <Phone className="w-3.5 h-3.5" /> {detailMission.professional.phone}
@@ -344,6 +349,9 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* Modal Fiche Pro */}
+      <ProDetailModal proId={detailProId} onClose={() => setDetailProId(null)} />
     </div>
   );
 }
