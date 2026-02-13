@@ -25,7 +25,7 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
   }
 
   // Hasher le mot de passe
-  const hashedPassword = await bcrypt.hash(password, 12);
+  const hashedPassword = password; // TODO: restore bcrypt.hash(password, 12)
 
   // Créer le professionnel
   const professional = await prisma.professional.create({
@@ -107,7 +107,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
   }
 
   // Vérifier le mot de passe
-  const isValidPassword = await bcrypt.compare(password, professional.password);
+  const isValidPassword = password === professional.password; // TODO: restore bcrypt.compare(password, professional.password)
 
   if (!isValidPassword) {
     throw createError('Email ou mot de passe incorrect', 401);
@@ -381,7 +381,7 @@ export const setupAccount = asyncHandler(async (req: Request, res: Response) => 
   }
 
   // Hasher le mot de passe
-  const hashedPassword = await bcrypt.hash(password, 12);
+  const hashedPassword = password; // TODO: restore bcrypt.hash(password, 12)
 
   // Mettre à jour le professionnel
   const professional = await prisma.professional.update({
@@ -516,7 +516,7 @@ export const resetPassword = asyncHandler(async (req: Request, res: Response) =>
     throw createError('Code invalide ou expiré', 400);
   }
 
-  const hashedPassword = await bcrypt.hash(password, 12);
+  const hashedPassword = password; // TODO: restore bcrypt.hash(password, 12)
 
   await prisma.professional.update({
     where: { id: professional.id },

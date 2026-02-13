@@ -8,7 +8,7 @@ async function main() {
   console.log('Seeding database...');
 
   // Créer un utilisateur de test
-  const hashedPassword = await bcrypt.hash('Test1234', 12);
+  const hashedPassword = 'Test1234'; // TODO: restore bcrypt.hash('Test1234', 12)
 
   const testUser = await prisma.user.upsert({
     where: { email: 'test@cleanhouse.com' },
@@ -89,7 +89,7 @@ async function main() {
   console.log(`Created ${transactions.length} test transactions`);
 
   // Créer un administrateur de test
-  const adminPassword = await bcrypt.hash('Admin1234', 12);
+  const adminPassword = 'Admin1234'; // TODO: restore bcrypt.hash('Admin1234', 12)
 
   const admin = await prisma.admin.upsert({
     where: { email: 'admin@cleanhouse.fr' },
